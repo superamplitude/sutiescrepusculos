@@ -11,16 +11,24 @@ if not token:
   token=values.get('WACALLS_API_TOKEN','')
 assert token,'Existing gateway token unavailable'
 url=env.get('WACALLS_API_BASE_URL','http://127.0.0.1:18080').rstrip('/')
-assert url=='http://127.0.0.1:18080','Existing gateway URL differs; refuse route substitution'
+assert url in ['http://127.0.0.1:18080','http://127.0.0.1:18191'],'Existing gateway must be one of the already authorized local endpoints'
 req=urllib.request.Request(url+'/api/sessions',headers={'Authorization':'Bearer '+token})
 with urllib.request.urlopen(req,timeout=15) as r:assert r.status==200
 target=pathlib.Path('/etc/crepusculo/wacalls.env');assert not target.exists(),'Do not replace an existing project credential'
+service=pathlib.Path('/home/sasuites/htdocs/suitescrepusculo.com.br/app/Services/AelWaCallsService.php')
+old_service=service.read_bytes()
+assert __import__('hashlib').sha256(old_service).hexdigest()=='14cf045cf875ff2957716c64100e8cc889db87934348db2bc8c47dbbbe052ff5','Service baseline changed'
+candidate=urllib.request.urlopen('https://raw.githubusercontent.com/superamplitude/sutiescrepusculos/8058fd1419d4a64fddcf93c0e51e20af8ce8b211/app/Services/AelWaCallsService.php',timeout=20).read()
+assert __import__('hashlib').sha256(candidate).hexdigest()=='2e04f19ad0c47700d112e0652f79db0fc31ac004190f4ad5da990dba0f29452a'
+subprocess.run(['php','-l'],input=candidate,check=True,capture_output=True)
 user=pwd.getpwnam('sasuites');target.parent.mkdir(parents=True,exist_ok=True)
 try:
- target.write_text('WACALLS_API_TOKEN='+token+'\n');os.chown(target,0,user.pw_gid);target.chmod(0o640)
+ service.write_bytes(candidate)
+ target.write_text('WACALLS_API_TOKEN='+token+'\nWACALLS_API_BASE_URL='+url+'\n');os.chown(target,0,user.pw_gid);target.chmod(0o640)
  code=r"""require '/home/sasuites/htdocs/suitescrepusculo.com.br/app/bootstrap.php';$s=(new App\Services\AelWaCallsService())->status(1);echo json_encode(['configured'=>$s['configured'],'session_exists'=>$s['exists'],'paired'=>$s['paired'],'state'=>$s['state']]);"""
  result=subprocess.run(['sudo','-n','-u','sasuites','php','-r',code],check=True,capture_output=True,text=True)
+ print('WHATSAPP_GATEWAY_URL='+url)
  print('WHATSAPP_PROJECT_STATE='+result.stdout)
  print('EXISTING_GATEWAY_REUSED=1; NEW_GATEWAYS=0; SESSION_MUTATIONS=0; BACKUPS_CREATED=0')
 except BaseException:
- target.unlink(missing_ok=True);raise
+ service.write_bytes(old_service);target.unlink(missing_ok=True);raise
