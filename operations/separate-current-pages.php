@@ -96,7 +96,7 @@ try{
  if(hash_file('sha256',$root.'/index.php')!==hash('sha256',$candidate))throw new RuntimeException('Entry integrity failure');
  foreach($before as $r=>$baseline){
   $after=checkUrl($r);
-  if($after['status']!==$baseline['status'] || $after['title']!==$baseline['title'] || abs($after['bytes']-$baseline['bytes'])>max(500,$baseline['bytes']*.05))throw new RuntimeException('HTTP regression: '.$r);
+  if($after['status']!==$baseline['status'] || $after['title']!==$baseline['title'] || abs($after['bytes']-$baseline['bytes'])>max(500,$baseline['bytes']*.05))throw new RuntimeException('HTTP regression: '.$r.' baseline='.json_encode($baseline).' after='.json_encode($after));
   echo "HTTP_PARITY_OK=".$r."\n";
  }
  if(checkUrl('direct')['status']!==404)throw new RuntimeException('Direct module access must be blocked');
