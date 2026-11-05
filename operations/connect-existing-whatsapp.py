@@ -11,15 +11,15 @@ if not token:
   token=values.get('WACALLS_API_TOKEN','')
 assert token,'Existing gateway token unavailable'
 url=env.get('WACALLS_API_BASE_URL','http://127.0.0.1:18080').rstrip('/')
-assert url in ['http://127.0.0.1:18080','http://127.0.0.1:18191'],'Existing gateway must be one of the already authorized local endpoints'
+assert url in ['http://127.0.0.1:18180'],'Existing gateway must be one of the already authorized local endpoints'
 req=urllib.request.Request(url+'/api/sessions',headers={'Authorization':'Bearer '+token})
 with urllib.request.urlopen(req,timeout=15) as r:assert r.status==200
 target=pathlib.Path('/etc/crepusculo/wacalls.env');assert not target.exists(),'Do not replace an existing project credential'
 service=pathlib.Path('/home/sasuites/htdocs/suitescrepusculo.com.br/app/Services/AelWaCallsService.php')
 old_service=service.read_bytes()
 assert __import__('hashlib').sha256(old_service).hexdigest()=='14cf045cf875ff2957716c64100e8cc889db87934348db2bc8c47dbbbe052ff5','Service baseline changed'
-candidate=urllib.request.urlopen('https://raw.githubusercontent.com/superamplitude/sutiescrepusculos/8058fd1419d4a64fddcf93c0e51e20af8ce8b211/app/Services/AelWaCallsService.php',timeout=20).read()
-assert __import__('hashlib').sha256(candidate).hexdigest()=='2e04f19ad0c47700d112e0652f79db0fc31ac004190f4ad5da990dba0f29452a'
+candidate=urllib.request.urlopen('https://raw.githubusercontent.com/superamplitude/sutiescrepusculos/e99e746f8e50a86b4a9ed5272ce7cf1ee9c2cb85/app/Services/AelWaCallsService.php',timeout=20).read()
+assert __import__('hashlib').sha256(candidate).hexdigest()=='dfaff72b4be2f6342f81358a5b343ac950834c5d6d2b6c9368c11fa598e1903b'
 subprocess.run(['php','-l'],input=candidate,check=True,capture_output=True)
 user=pwd.getpwnam('sasuites');target.parent.mkdir(parents=True,exist_ok=True)
 try:
