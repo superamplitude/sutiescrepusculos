@@ -1,0 +1,11 @@
+config/config.php
+storage/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.bak
+*.sql
+__pycache__/
+node_modules/
