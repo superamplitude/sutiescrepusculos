@@ -98,7 +98,7 @@ final class AelWaCallsService
     private function waitForAuthEvent(string $sessionId,string $name,int $seconds): array
     {
         $token=$this->token();
-        $ch=curl_init(self::BASE_URL.'/api/events');
+        $ch=curl_init($this->baseUrl().'/api/events');
         if($ch===false)throw new \RuntimeException('Não foi possível abrir o stream de pareamento.');
         $buffer='';
         $found=null;
@@ -162,7 +162,7 @@ final class AelWaCallsService
             $body=json_encode($payload,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR);
             $headers[]='Content-Type: application/json';
         }
-        $ch=curl_init(self::BASE_URL.$path);
+        $ch=curl_init($this->baseUrl().$path);
         if($ch===false)throw new \RuntimeException('Falha ao iniciar comunicação com WaCalls.');
         curl_setopt_array($ch,[
             CURLOPT_RETURNTRANSFER=>true,
@@ -184,6 +184,20 @@ final class AelWaCallsService
             throw new \RuntimeException('WaCalls HTTP '.$status.($msg!==''?': '.$msg:''));
         }
         return is_array($data)?$data:[];
+    }
+
+    private function baseUrl(): string
+    {
+        if(is_readable(self::ENV_FILE)){
+            foreach(file(self::ENV_FILE,FILE_IGNORE_NEW_LINES|FILE_SKIP_EMPTY_LINES)?:[] as $line){
+                if(str_starts_with($line,'WACALLS_API_BASE_URL=')){
+                    $url=rtrim(trim(substr($line,strlen('WACALLS_API_BASE_URL='))),'/');
+                    if(in_array($url,['http://127.0.0.1:18080','http://127.0.0.1:18191'],true))return $url;
+                    throw new \RuntimeException('O endereço configurado não corresponde ao gateway local autorizado.');
+                }
+            }
+        }
+        return self::BASE_URL;
     }
 
     private function token(): string
