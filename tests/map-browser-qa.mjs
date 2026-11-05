@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {chromium} from '/var/tmp/gerente-crm-ui-check/node_modules/playwright/index.mjs';
 const session=JSON.parse(process.env.SUITES_QA_SESSION);
-const browser=await chromium.launch({headless:true,args:['--host-resolver-rules=MAP suitescrepusculo.com.br 127.0.0.1','--no-proxy-server']});
+const browser=await chromium.launch({headless:true,args:['--no-proxy-server']});
 try {
  const context=await browser.newContext();
  await context.addCookies([{name:session.name,value:session.id,domain:'suitescrepusculo.com.br',path:'/',secure:true,httpOnly:true}]);
