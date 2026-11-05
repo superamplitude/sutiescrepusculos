@@ -5,7 +5,7 @@ namespace App\Services;
 
 final class AelWaCallsService
 {
-    private const BASE_URL = 'http://127.0.0.1:18080';
+    private const BASE_URL = 'http://127.0.0.1:18180';
     private const ENV_FILE = '/etc/crepusculo/wacalls.env';
 
     public function sessionName(int $companyId = 1): string
@@ -192,7 +192,7 @@ final class AelWaCallsService
             foreach(file(self::ENV_FILE,FILE_IGNORE_NEW_LINES|FILE_SKIP_EMPTY_LINES)?:[] as $line){
                 if(str_starts_with($line,'WACALLS_API_BASE_URL=')){
                     $url=rtrim(trim(substr($line,strlen('WACALLS_API_BASE_URL='))),'/');
-                    if(in_array($url,['http://127.0.0.1:18080','http://127.0.0.1:18191'],true))return $url;
+                    if($url==='http://127.0.0.1:18180')return $url;
                     throw new \RuntimeException('O endereço configurado não corresponde ao gateway local autorizado.');
                 }
             }
