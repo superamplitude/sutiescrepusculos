@@ -5,6 +5,7 @@ $root='/home/sasuites/htdocs/suitescrepusculo.com.br';
 $source=file_get_contents($root.'/index.php');
 $expected='3082b745d391618860df038d9799def4343339d9057eb9b0efac85c5725873e9';
 if(hash('sha256',$source)!==$expected) throw new RuntimeException('Source changed; refuse stale transformation');
+$imports='use App\Core\DB;use App\Core\Auth;use App\Core\Csrf;use App\Core\U;use App\Core\Audit;use App\Core\Secret;use App\Core\Site;use App\Services\ReservationService;use App\Services\GeminiService;use App\Services\UploadService;use App\Services\ICalService;use App\Controllers\WhatsappController;';
 $ts=token_get_all($source, TOKEN_PARSE); $offsets=[];$pos=0;
 foreach($ts as $t){$offsets[]=$pos;$pos+=strlen(is_array($t)?$t[1]:$t);}
 function tv($t){return is_array($t)?$t[1]:$t;}
@@ -40,7 +41,7 @@ for($i=0;$i<count($ts);$i++){
     elseif(is_array($tok)&&$tok[0]===T_LINE)$body.=(string)$tok[2];
     else $body.=tv($tok);
    }
-   $pages[$name]="<?php\nif (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }\n".$body;
+   $pages[$name]="<?php\n".$imports."\nif (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }\n".$body;
    $replacement="if".$cond."{require __DIR__.'/pages/".$name.".php';}";
    $begin=$offsets[$i];$end=$offsets[$e-1]+1;
    $replacements[]=[$begin,$end,$replacement];
@@ -94,6 +95,8 @@ try{
  rewind($fp);if(fwrite($fp,$candidate)!==strlen($candidate))throw new RuntimeException('Incomplete entry write');
  ftruncate($fp,strlen($candidate));fflush($fp);fsync($fp);
  if(hash_file('sha256',$root.'/index.php')!==hash('sha256',$candidate))throw new RuntimeException('Entry integrity failure');
+ // FPM opcode cache revalidates source timestamps; wait once before live checks.
+ sleep(3);
  foreach($before as $r=>$baseline){
   $after=checkUrl($r);
   if($after['status']!==$baseline['status'] || $after['title']!==$baseline['title'] || abs($after['bytes']-$baseline['bytes'])>max(500,$baseline['bytes']*.05))throw new RuntimeException('HTTP regression: '.$r.' baseline='.json_encode($baseline).' after='.json_encode($after));
