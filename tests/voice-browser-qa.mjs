@@ -13,7 +13,7 @@ try{
  const wire=page.waitForResponse(r=>r.url().includes('chat.php?action=panel_voice')&&r.request().method()==='POST',{timeout:95000});
  await page.locator('[data-voice-test]').click();const response=await wire;assert.equal(response.status(),200);
  assert(response.headers()['content-type'].includes('audio/wav'));const bytes=await response.body();
- assert(bytes.length>10000);assert.equal(bytes.toString('ascii',0,4),'RIFF');assert.equal(bytes.toString('ascii',8,12),'WAVE');
+ console.log('VOICE_WIRE='+JSON.stringify({bytes:bytes.length,length:response.headers()['content-length'],magic:bytes.subarray(0,12).toString('hex'),sampleRate:bytes.length>28?bytes.readUInt32LE(24):null}));assert(bytes.length>10000);assert.equal(bytes.toString('ascii',0,4),'RIFF');assert.equal(bytes.toString('ascii',8,12),'WAVE');
  assert(bytes.subarray(44).some(x=>x!==0));
  await page.waitForFunction(()=>window.__testAudio&&window.__testAudio.currentTime>0.05,{},{timeout:12000});
  await page.locator('[data-voice-stop]').click();
