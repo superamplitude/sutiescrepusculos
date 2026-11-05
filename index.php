@@ -1,27 +1,4 @@
-<style id="crepusculo-room-actions">
-.table-actions{display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:nowrap!important;white-space:nowrap!important}
-.table-actions form{display:inline-flex!important;margin:0!important;padding:0!important;width:auto!important}
-.table-actions .btn.secondary.small,
-.table-actions a.btn.secondary.small{
-  display:inline-flex!important;align-items:center!important;justify-content:center!important;
-  width:auto!important;min-width:72px!important;height:34px!important;
-  padding:0 14px!important;margin:0!important;border:1px solid #218838!important;
-  border-radius:8px!important;background:#28a745!important;color:#fff!important;
-  font-weight:600!important;text-decoration:none!important;line-height:1!important
-}
-.table-actions .danger.small,
-.table-actions button.danger.small{
-  display:inline-flex!important;align-items:center!important;justify-content:center!important;
-  width:auto!important;min-width:72px!important;height:34px!important;
-  padding:0 14px!important;margin:0!important;border:1px solid #e76800!important;
-  border-radius:8px!important;background:#f47b20!important;color:#fff!important;
-  font-weight:600!important;line-height:1!important
-}
-.table-actions .btn.secondary.small:hover,
-.table-actions a.btn.secondary.small:hover{background:#218838!important}
-.table-actions .danger.small:hover,
-.table-actions button.danger.small:hover{background:#dc6508!important}
-</style><?php
+<?php
 define('SUITES_PAGE_ENTRY', true);
 
 require __DIR__.'/app/bootstrap.php';

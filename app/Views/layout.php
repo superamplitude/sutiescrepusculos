@@ -1,6 +1,29 @@
 <?php use App\Core\U; use App\Core\Auth; use App\Core\Site; $siteSettings=Site::all(); $siteLayout=(string)($siteSettings['layout_variant']??'layout1'); $siteLogo=(string)($siteSettings['logo_path']??''); ?>
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?=U::e($title??'Pousada IA')?></title><?php if(!empty($metaDescription)):?><meta name="description" content="<?=U::e($metaDescription)?>"><?php endif;?><?php if(!empty($siteSettings['favicon_path'])):?><link rel="icon" href="<?=U::e($siteSettings['favicon_path'])?>"><?php endif;?><?php $cssV=@filemtime(__DIR__.'/../../assets/css/app.css')?:time(); ?><link rel="stylesheet" href="assets/css/app.css?v=<?=$cssV?>"><style>:root{--site-primary:<?=U::e(Site::color('primary_color','#0d756d'))?>;--site-secondary:<?=U::e(Site::color('secondary_color','#173f3b'))?>;--site-accent:<?=U::e(Site::color('accent_color','#bf8d39'))?>;--site-body-font:'<?=U::e(Site::font('body_font','Inter'))?>';--site-heading-font:'<?=U::e(Site::font('heading_font','Georgia'))?>';}</style></head>
+<title><?=U::e($title??'Pousada IA')?></title><?php if(!empty($metaDescription)):?><meta name="description" content="<?=U::e($metaDescription)?>"><?php endif;?><?php if(!empty($siteSettings['favicon_path'])):?><link rel="icon" href="<?=U::e($siteSettings['favicon_path'])?>"><?php endif;?><?php $cssV=@filemtime(__DIR__.'/../../assets/css/app.css')?:time(); ?><style id="crepusculo-room-actions">
+.table-actions{display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:nowrap!important;white-space:nowrap!important}
+.table-actions form{display:inline-flex!important;margin:0!important;padding:0!important;width:auto!important}
+.table-actions .btn.secondary.small,
+.table-actions a.btn.secondary.small{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  width:auto!important;min-width:72px!important;height:34px!important;
+  padding:0 14px!important;margin:0!important;border:1px solid #218838!important;
+  border-radius:8px!important;background:#28a745!important;color:#fff!important;
+  font-weight:600!important;text-decoration:none!important;line-height:1!important
+}
+.table-actions .danger.small,
+.table-actions button.danger.small{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  width:auto!important;min-width:72px!important;height:34px!important;
+  padding:0 14px!important;margin:0!important;border:1px solid #e76800!important;
+  border-radius:8px!important;background:#f47b20!important;color:#fff!important;
+  font-weight:600!important;line-height:1!important
+}
+.table-actions .btn.secondary.small:hover,
+.table-actions a.btn.secondary.small:hover{background:#218838!important}
+.table-actions .danger.small:hover,
+.table-actions button.danger.small:hover{background:#dc6508!important}
+</style><link rel="stylesheet" href="assets/css/app.css?v=<?=$cssV?>"><style>:root{--site-primary:<?=U::e(Site::color('primary_color','#0d756d'))?>;--site-secondary:<?=U::e(Site::color('secondary_color','#173f3b'))?>;--site-accent:<?=U::e(Site::color('accent_color','#bf8d39'))?>;--site-body-font:'<?=U::e(Site::font('body_font','Inter'))?>';--site-heading-font:'<?=U::e(Site::font('heading_font','Georgia'))?>';}</style></head>
 <body class="<?=Auth::user()?'admin-mode':'public-mode '.U::e($siteLayout)?>">
 <?php if(Auth::user()): ?>
 <aside class="admin-sidebar">
