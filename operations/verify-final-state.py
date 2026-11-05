@@ -2,7 +2,7 @@
 import os,pathlib,urllib.request,urllib.error,json,hashlib,subprocess,hmac
 assert os.environ.get('RUNNER_NAME')=='gerente-vps'
 root=pathlib.Path('/home/sasuites/htdocs/suitescrepusculo.com.br')
-m=json.loads(urllib.request.urlopen('https://raw.githubusercontent.com/superamplitude/sutiescrepusculos/d636d5cbcb9a17d798657c3f409f379ca7c5b6af/deploy/runtime-manifest-20261105.json',timeout=20).read())
+m=json.loads(urllib.request.urlopen('https://raw.githubusercontent.com/superamplitude/sutiescrepusculos/98cacd8a2a1091c58eb9fe793c1f67b47875be72/deploy/runtime-manifest-20261105.json',timeout=20).read())
 assert m['runtime']==str(root)
 bad=[]
 for name,sha in m['files'].items():
