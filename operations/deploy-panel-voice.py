@@ -2,14 +2,14 @@
 import os,pathlib,hashlib,urllib.request,urllib.error,subprocess,tempfile,json,pwd,time,secrets,re
 assert os.environ.get('RUNNER_NAME')=='gerente-vps'
 root=pathlib.Path('/home/sasuites/htdocs/suitescrepusculo.com.br')
-ref='d1a9fd5c6a006e375d091bfeb4f3380456373828'
+ref='2748f8dffbb685c6b881171ad74d5aa6083275f8'
 manifest=json.loads('{"chat.php":{"before":"737170a9f407305b55883e76fc36e34321d4cd3232c0f3890ff3019bbb837719","after":"9f1efb99101767b87bd2cf4f6a840bcf38f2258cf004975900878f8af707996c"},"app/Views/layout.php":{"before":"11d40e3650b583d7eeb0b1a7ac5f27fedfebba7a57ee614d38a8706cefd24326","after":"bfa3cb1b42e0aef0a52ad094d7c28f45c423c88943d976d4ce1611646f3a81e8"},"app/Services/PanelVoiceService.php":{"before":null,"after":"778d2cfc0c8f4b4d4d412b74a4b3d37bc00fe060226a2d132f62f2b7e823368b"},"app/Controllers/PanelVoiceController.php":{"before":null,"after":"5c2d922bdf4a774a48b4cd4d0c40d09e934b819ed4a27a29006ce69cb439e7f8"},"assets/css/panel-voice.css":{"before":null,"after":"77ac9b6b1d3defa35094b525842fff22556c72597d09168eddd260533765ece0"},"assets/js/panel-voice.js":{"before":null,"after":"5112e67de12586763e904356f57fa1ae480d1ea05a0328bb77fe367ac53d87cf"}}')
 def fetch(path,sha):
  data=urllib.request.urlopen('https://raw.githubusercontent.com/superamplitude/sutiescrepusculos/'+ref+'/'+path,timeout=20).read()
  assert hashlib.sha256(data).hexdigest()==sha,path+' integrity'
  return data
 payload={p:fetch(p,v['after']) for p,v in manifest.items()}
-qa=fetch('tests/voice-browser-qa.mjs','54a549c9b994de8ab66c25f9c25261b47d9687a515602dd4b30ed5d012ed4dfd')
+qa=fetch('tests/voice-browser-qa.mjs','d333128143320a75c4b402508010d7b50f8d74a7f34bf0bfba9b19dc50de2933')
 original={}
 for p,v in manifest.items():
  path=root/p;assert not path.is_symlink()
