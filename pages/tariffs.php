@@ -1,0 +1,9 @@
+<?php
+use App\Core\DB;use App\Core\Auth;use App\Core\Csrf;use App\Core\U;use App\Core\Audit;use App\Core\Secret;use App\Core\Site;use App\Services\ReservationService;use App\Services\GeminiService;use App\Services\UploadService;use App\Services\ICalService;use App\Controllers\WhatsappController;
+if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
+
+  Auth::requirePerm('prices.edit');
+  if($_SERVER['REQUEST_METHOD']==='POST'){Csrf::check();$pdo->prepare("INSERT INTO tariffs(room_id,name,start_date,end_date,price,min_nights,priority,active) VALUES(?,?,?,?,?,?,?,1)")->execute([(int)$_POST['room_id'],$_POST['name'],$_POST['start_date'],$_POST['end_date'],(float)$_POST['price'],(int)$_POST['min_nights'],(int)$_POST['priority']]);U::redirect('index.php?p=tariffs');}
+  $rooms=$pdo->query("SELECT id,name FROM rooms WHERE active=1 ORDER BY name")->fetchAll();$ts=$pdo->query("SELECT t.*,r.name room FROM tariffs t JOIN rooms r ON r.id=t.room_id ORDER BY t.start_date DESC")->fetchAll();
+  $h=adminTitle('Tarifas','Preços por período.').'<form method=post class=card>'.Csrf::field().'<div class=grid3><label>Quarto<select name=room_id>';foreach($rooms as $r)$h.="<option value={$r['id']}>".U::e($r['name'])."</option>";$h.='</select></label>'.row('Nome da tarifa','name').row('Início','start_date','', 'date').row('Fim','end_date','', 'date').row('Preço / diária','price','', 'number').row('Noites mínimas','min_nights',1,'number').row('Prioridade','priority',0,'number').'</div><button>Adicionar tarifa</button></form><div class=card><table><tr><th>Quarto</th><th>Tarifa</th><th>Período</th><th>Preço</th></tr>';
+  foreach($ts as $t)$h.="<tr><td>".U::e($t['room'])."</td><td>".U::e($t['name'])."</td><td>{$t['start_date']} → {$t['end_date']}</td><td>".money((float)$t['price'])."</td></tr>";render('Tarifas',$h.'</table></div>');exit;

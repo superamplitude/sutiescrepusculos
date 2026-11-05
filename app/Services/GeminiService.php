@@ -1,0 +1,44 @@
+<?php
+namespace App\Services;
+use App\Core\DB;
+use App\Core\Secret;
+use App\Core\Site;
+final class GeminiService{
+  public function config():array{
+    $s=DB::pdo()->query("SELECT * FROM ai_config WHERE id=1");return $s->fetch()?:[];
+  }
+  public function ask(string $q):array{
+    $c=$this->config();$apiKey=Secret::decrypt($c['api_key']??'');
+    if(empty($c['enabled'])||empty($apiKey))return ['ok'=>false,'mode'=>'fallback','answer'=>$this->fallback($q),'error'=>'Gemini não configurado'];
+    if(!function_exists('curl_init'))return ['ok'=>false,'mode'=>'fallback','answer'=>$this->fallback($q),'error'=>'cURL indisponível'];
+    $model=$c['model']?:'gemini-2.5-flash';
+    $ctx=$this->knowledge();
+    $agent=trim((string)Site::get('chat_agent_name','Assistente IA'))?:'Assistente IA';
+    $central=trim((string)($c['system_instruction']??''));
+    $rules="Você é {$agent}, agente virtual de atendimento de uma pousada. Use SOMENTE informações confirmadas na base fornecida. Não invente disponibilidade, preço, política, serviço ou condição. Se a base não trouxer a resposta, diga que precisa confirmar com a equipe humana.";
+    if($central!=='')$rules.="\nINSTRUÇÃO DO SUPER ADMIN:\n".$central;
+    $payload=['contents'=>[['parts'=>[['text'=>$rules."\n\nBASE CONFIRMADA:\n".$ctx."\n\nPERGUNTA DO CLIENTE:\n".$q]]]]];
+    $ch=curl_init("https://generativelanguage.googleapis.com/v1beta/models/".rawurlencode($model).":generateContent?key=".rawurlencode($apiKey));
+    curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_POST=>true,CURLOPT_HTTPHEADER=>['Content-Type: application/json'],CURLOPT_POSTFIELDS=>json_encode($payload),CURLOPT_CONNECTTIMEOUT=>8,CURLOPT_TIMEOUT=>25,CURLOPT_IPRESOLVE=>CURL_IPRESOLVE_V4]);
+    $raw=curl_exec($ch);$err=curl_error($ch);$http=(int)curl_getinfo($ch,CURLINFO_HTTP_CODE);curl_close($ch);
+    if($err||$http<200||$http>=300)return ['ok'=>false,'mode'=>'gemini','answer'=>$this->fallback($q),'http'=>$http,'error'=>$err?:$raw];
+    $j=json_decode($raw,true);$a=$j['candidates'][0]['content']['parts'][0]['text']??'';
+    if(!$a)return ['ok'=>false,'mode'=>'gemini','answer'=>$this->fallback($q),'http'=>$http,'error'=>'Resposta vazia'];
+    return ['ok'=>true,'mode'=>'gemini','answer'=>$a,'http'=>$http,'model'=>$model];
+  }
+  private function knowledge():string{
+    $pdo=DB::pdo();$parts=[];
+    $p=$pdo->query("SELECT name,short_description,description,history,concept,city,state,address,phone,whatsapp,email,checkin,checkout,cancellation_policy,house_rules FROM property WHERE id=1")->fetch();
+    if($p)$parts[]="POUSADA: ".json_encode($p,JSON_UNESCAPED_UNICODE);
+    $rooms=$pdo->query("SELECT name,type,description,capacity,base_price,view_name,bathroom_type FROM rooms WHERE active=1")->fetchAll();
+    $parts[]="QUARTOS: ".json_encode($rooms,JSON_UNESCAPED_UNICODE);
+    $kb=$pdo->query("SELECT title,content FROM knowledge_base WHERE active=1 ORDER BY id DESC LIMIT 50")->fetchAll();
+    $parts[]="FAQ/BASE: ".json_encode($kb,JSON_UNESCAPED_UNICODE);
+    return implode("\n",$parts);
+  }
+  private function fallback(string $q):string{
+    $pdo=DB::pdo();$s=$pdo->prepare("SELECT content FROM knowledge_base WHERE active=1 AND (title LIKE ? OR content LIKE ?) ORDER BY id DESC LIMIT 1");
+    $like='%'.trim($q).'%';$s->execute([$like,$like]);$x=$s->fetchColumn();
+    return $x?:'Não encontrei essa informação na base cadastrada. Vou precisar que a pousada confirme.';
+  }
+}

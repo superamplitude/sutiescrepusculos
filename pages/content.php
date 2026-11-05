@@ -1,0 +1,13 @@
+<?php
+use App\Core\DB;use App\Core\Auth;use App\Core\Csrf;use App\Core\U;use App\Core\Audit;use App\Core\Secret;use App\Core\Site;use App\Services\ReservationService;use App\Services\GeminiService;use App\Services\UploadService;use App\Services\ICalService;use App\Controllers\WhatsappController;
+if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
+
+  Auth::requirePerm('content.publish');$edit=null;if(isset($_GET['id'])){$q=$pdo->prepare("SELECT * FROM contents WHERE id=?");$q->execute([(int)$_GET['id']]);$edit=$q->fetch();}
+  if($_SERVER['REQUEST_METHOD']==='POST'){
+    Csrf::check();$id=(int)($_POST['id']??0);$status=in_array($_POST['status']??'draft',['draft','published'],true)?$_POST['status']:'draft';
+    if($id)$pdo->prepare("UPDATE contents SET slug=?,title=?,body=?,seo_title=?,meta_description=?,status=?,updated_at=NOW() WHERE id=?")->execute([$_POST['slug'],$_POST['title'],$_POST['body'],$_POST['seo_title'],$_POST['meta_description'],$status,$id]);
+    else{$pdo->prepare("INSERT INTO contents(slug,title,body,seo_title,meta_description,status,updated_at) VALUES(?,?,?,?,?,?,NOW())")->execute([$_POST['slug'],$_POST['title'],$_POST['body'],$_POST['seo_title'],$_POST['meta_description'],$status]);$id=(int)$pdo->lastInsertId();}
+    Audit::log('content.save','content',$id);U::redirect('index.php?p=content&id='.$id);
+  }
+  $x=$edit?:['id'=>'','slug'=>'','title'=>'','body'=>'','seo_title'=>'','meta_description'=>'','status'=>'draft'];$cs=$pdo->query("SELECT * FROM contents ORDER BY id DESC")->fetchAll();
+  $h=adminTitle('Conteúdo / SEO','Páginas e conteúdos publicados.').'<div class=split><div class=card><h2>Conteúdos</h2><table><tr><th>Slug</th><th>Título</th><th>Status</th><th></th></tr>';foreach($cs as $c)$h.='<tr><td>'.U::e($c['slug']).'</td><td>'.U::e($c['title']).'</td><td>'.U::e(statusPt($c['status'])).'</td><td><a href="index.php?p=content&id='.$c['id'].'">Editar</a></td></tr>';$h.='</table></div><form method=post class=card>'.Csrf::field().'<input type=hidden name=id value="'.U::e($x['id']).'"><h2>'.($edit?'Editar conteúdo':'Novo conteúdo').'</h2><div class=grid2>'.row('Slug','slug',$x['slug']).row('Título','title',$x['title']).row('Título SEO','seo_title',$x['seo_title']).row('Meta description','meta_description',$x['meta_description']).'</div>'.row('Conteúdo','body',$x['body'],'textarea').'<label>Status<select name=status><option value=draft '.($x['status']==='draft'?'selected':'').'>Rascunho</option><option value=published '.($x['status']==='published'?'selected':'').'>Publicado</option></select></label><button>Salvar conteúdo</button></form></div>';render('Conteúdo',$h);exit;
