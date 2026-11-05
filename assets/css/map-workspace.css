@@ -1,0 +1,14 @@
+.suites-map-workspace .map-unified-toolbar{flex-wrap:wrap;overflow:visible;gap:8px;margin:12px 0}
+.suites-map-workspace .map-unified-toolbar .mapnav,.suites-map-workspace .map-toolbar{gap:6px;flex-wrap:wrap}
+.suites-map-workspace .map-unified-toolbar .btn,.suites-map-workspace .map-editor-actions .btn{min-height:32px;padding:6px 10px;font-size:13px;line-height:1.3;border-radius:6px}
+.suites-map-workspace .map-reservation-dialog{width:min(820px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;padding:18px}
+.suites-map-workspace .map-modal-grid{gap:10px}
+.suites-map-workspace .map-reservation-dialog input:not([type=checkbox]):not([type=radio]),.suites-map-workspace .map-reservation-dialog select{min-height:36px;height:36px;padding:6px 9px;font-size:14px}
+.suites-map-workspace .map-reservation-dialog textarea{min-height:72px;padding:8px;font-size:14px}
+.suites-map-workspace .map-period-modes{margin-bottom:12px;gap:6px}
+.suites-map-editor{width:min(980px,calc(100vw - 24px));height:min(820px,calc(100dvh - 24px));max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);padding:0;border:1px solid #52605c;border-radius:12px;overflow:hidden;background:#fff;box-shadow:0 24px 80px #0005}
+.suites-map-editor::backdrop{background:#152724b8}
+.suites-map-editor>header{height:56px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;gap:12px;border-bottom:1px solid #a1aaa6}
+.suites-map-editor h2{margin:0;font-size:18px}.suites-map-editor>header button{width:32px;height:32px;padding:0;font-size:24px;background:#eef1ef;color:#192b25;border:1px solid #9ca8a2;border-radius:6px}
+.suites-map-editor iframe{display:block;width:100%;height:calc(100% - 56px);border:0}
+@media(max-width:600px){.suites-map-workspace .map-unified-toolbar .mapnav{border:0;padding:0}.suites-map-workspace .map-modal-grid{grid-template-columns:1fr 1fr}.suites-map-workspace .map-modal-grid .wide{grid-column:1/-1}}
