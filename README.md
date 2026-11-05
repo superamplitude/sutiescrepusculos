@@ -6,7 +6,7 @@ Repositório próprio do código e dos recursos do projeto. A administração da
 
 ## Publicado
 
-- Entrada PHP reduzida de 206276 para 9503 bytes; 53 módulos separados em `pages/`, preservando endereços, bootstrap, autenticação e permissões. Alguns conteúdos relacionados continuam agrupados no mesmo módulo.
+- Entrada PHP enxuta, sem CSS antes do protocolo PHP; 53 módulos separados em `pages/`, preservando endereços, bootstrap, autenticação e permissões. Alguns conteúdos relacionados continuam agrupados no mesmo módulo.
 - Mapa: cadastro de reserva, nova unidade, acomodações, lista de reservas e configuração da automação abrem em janelas sobrepostas. Botões e campos compactos, com verificação em desktop e celular.
 - Painel: voz natural pela Central de Comunicação existente, com perfil Callirrhoe / gemini-3.8-live herdado do CRM, saudação, pergunta por texto, microfone quando suportado pelo navegador, repetição e interrupção. A reprodução automática está sujeita à política de áudio do navegador.
 - Respostas usam a IA e a base de conhecimento já existentes na pousada.
@@ -20,9 +20,10 @@ Repositório próprio do código e dos recursos do projeto. A administração da
 | Separação de páginas | [Execução 42100299414](https://github.com/superamplitude/Gerente-VPS/actions/runs/42100299414), sintaxe PHP e HTTP aprovados |
 | Janelas do mapa | [Execução 42101988824](https://github.com/superamplitude/Gerente-VPS/actions/runs/42101988824), cinco ações em sobreposição, celular e zero erros JS |
 | Voz e IA | [Execução 42104152952](https://github.com/superamplitude/Gerente-VPS/actions/runs/42104152952), WAV real de 282596 bytes, reprodução iniciada e resposta real da IA |
+| JSON do mapa | [Execução 42108023447](https://github.com/superamplitude/Gerente-VPS/actions/runs/42108023447), resposta limpa, leitura de reserva real sem gravações e layout preservado |
 | Autenticação da voz | Sem sessão: HTTP401; CSRF inválido: HTTP419 |
 | Gateway WhatsApp | [Execução 42104889724](https://github.com/superamplitude/Gerente-VPS/actions/runs/42104889724), acesso confirmado como usuário Linux do site |
-| QR Code real | [Execução 42105943746](https://github.com/superamplitude/Gerente-VPS/actions/runs/42105943746), payload gerado, sem mensagens ou ligações externas |
+| QR Code real | [Execução 42105943746](https://github.com/superamplitude/Gerente-VPS/actions/runs/42105943746), payload gerado, sem mensagens ou ligações externas; canvas real de 320×320 também conferido no navegador |
 
 O manifesto em `deploy/runtime-manifest-20261105.json` registra os hashes do código publicado. Configuração de produção, chaves, banco e dados privados não estão no repositório.
 
