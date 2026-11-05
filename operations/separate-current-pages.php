@@ -56,8 +56,8 @@ if(count($pages)<40)throw new RuntimeException('Expected at least 40 route modul
 $candidate=$source;
 foreach(array_reverse($replacements) as [$b,$e,$r])$candidate=substr_replace($candidate,$r,$b,$e-$b);
 $phpOpen=strpos($candidate,'<?php');
-if($phpOpen!==0)throw new RuntimeException('Unexpected PHP preamble');
-$candidate=substr_replace($candidate,"\ndefine('SUITES_PAGE_ENTRY', true);\n",5,0);
+if($phpOpen===false || trim(substr($candidate,0,$phpOpen), "\\xEF\\xBB\\xBF \\r\\n\\t")!=='')throw new RuntimeException('Unexpected PHP preamble');
+$candidate=substr_replace($candidate,"\ndefine('SUITES_PAGE_ENTRY', true);\n",$phpOpen+5,0);
 function lintText($s){
  $pipes=[];$p=proc_open([PHP_BINARY,'-l'],[['pipe','r'],['pipe','w'],['pipe','w']],$pipes);
  fwrite($pipes[0],$s);fclose($pipes[0]);$out=stream_get_contents($pipes[1]).stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);
