@@ -31,7 +31,7 @@ for($i=0;$i<count($ts);$i++){
    if(isset($ts[$after])&&is_array($ts[$after])&&in_array($ts[$after][0],[T_ELSE,T_ELSEIF],true))throw new RuntimeException('Route has else branch; manual extraction required');
    preg_match_all("/'([a-z][a-z0-9_]*)'/",$cond,$names);
    $name=$names[1][0]??'';
-   if(!$name||isset($pages[$name]))throw new RuntimeException('Ambiguous page name');
+   if(!$name||isset($pages[$name]))throw new RuntimeException('Ambiguous page name: '.$name.' line '.$t[2].' condition '.$cond);
    $body='';
    for($k=$b+1;$k<$e-1;$k++){
     $tok=$ts[$k];
