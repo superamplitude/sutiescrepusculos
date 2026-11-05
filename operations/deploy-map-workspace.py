@@ -2,7 +2,7 @@
 import os,pathlib,hashlib,urllib.request,subprocess,tempfile,json,pwd,fcntl,time,re
 assert os.environ.get('RUNNER_NAME')=='gerente-vps'
 root=pathlib.Path('/home/sasuites/htdocs/suitescrepusculo.com.br')
-ref='13fbcab317f38c2435b1c0e559a725ece4f585bb'
+ref='4ceaa7e925937afc134427029a8c4e5555e380b5'
 manifest={
 'pages/map.php':('800f9cf269328b76148b95b1ea1743d80ea9220a6267fe7179759baadbdbc049','6d63d39dce4948ade44da60a0d631f45ae10119f5a2c1c5892b612ce07ecabaf'),
 'assets/css/map-workspace.css':(None,'7eebf3d7b0eaf73ef85bf11a4855c1a8025b99334ebdccb6408f9dddcd9dcec2'),
@@ -12,7 +12,7 @@ def fetch(path,sha):
  assert hashlib.sha256(b).hexdigest()==sha,path+' payload integrity'
  return b
 payload={p:fetch(p,after) for p,(before,after) in manifest.items()}
-qa=fetch('tests/map-browser-qa.mjs','a3bb7affecc751675bf5f4eab1132936a93129b42b905bdf6942061b28ae3eb9')
+qa=fetch('tests/map-browser-qa.mjs','7755bc8a81261f97308502d97b80eecec313c040631c6fe0a0d2556a535f56ac')
 for p,b in payload.items():
  if p.endswith('.php'):subprocess.run(['php','-l'],input=b,check=True,capture_output=True)
  if p.endswith('.js'):subprocess.run(['node','--check'],input=b,check=True,capture_output=True)
