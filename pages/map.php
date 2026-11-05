@@ -8,7 +8,7 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   $weekday=['Sun'=>'Dom','Mon'=>'Seg','Tue'=>'Ter','Wed'=>'Qua','Thu'=>'Qui','Fri'=>'Sex','Sat'=>'Sáb'];
   $h=adminTitle('Mapa de Reservas','Clique em um dia livre para abrir a janela de pré-reserva. Arraste para selecionar várias diárias. Reservas existentes também abrem em janela sobreposta.');
   $h.='<div class=mapnav><a class=btn href="index.php?p=map&start='.$d0->modify('-15 days')->format('Y-m-d').'">← 15 dias</a><b>'.U::e($start).'</b><a class=btn href="index.php?p=map&start='.$d0->modify('+15 days')->format('Y-m-d').'">15 dias →</a></div>';
-  $h.='<div class=map-toolbar><a class=btn href="index.php?p=reservation_new">+ Cadastrar reserva</a><a class="btn secondary" href="index.php?p=rooms">Acomodações</a><a class="btn secondary" href="index.php?p=reservations">Lista de reservas</a></div>';
+  $h.='<div class=map-toolbar><a class=btn href="index.php?p=reservation_new">+ Reserva</a><a class="btn secondary" href="index.php?p=rooms&view=new">+ Unidade</a><a class="btn secondary" href="index.php?p=rooms">Acomodações</a><a class="btn secondary" href="index.php?p=reservations">Reservas</a><a class="btn secondary" href="index.php?p=ai">Automação</a></div>';
   $h.='<p class=map-help><b>Como usar:</b> clique em um dia livre para abrir a pré-reserva ou arraste sobre vários dias da mesma unidade. Depois de criar a pré-reserva, você pode efetivar a reserva ou cancelá-la sem sair do mapa.</p>';
   if(!$rooms)$h.='<div class="alert error">Cadastre e publique pelo menos uma unidade para usar o mapa.</div>';
   $h.='<div class=calendar><table><tr><th>Unidade</th>';
@@ -230,4 +230,5 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
 
 </script>
 SUITES_MAP_UI_20261105;
+  $h.='<link rel="stylesheet" href="assets/css/map-workspace.css?v=20261105"><script defer src="assets/js/map-workspace.js?v=20261105"></script>';
   render('Mapa de Reservas',$h);exit;
