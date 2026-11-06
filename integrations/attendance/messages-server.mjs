@@ -12,7 +12,7 @@ export async function opus(wav){
  });
 }
 export async function startMessagesServer(context){
- const socket='/run/suites-attendance/messages.sock';
+ const socket='/run/suites-messages/messages.sock';
  await unlink(socket).catch(e=>{if(e.code!=='ENOENT')throw e;});
  const server=http.createServer(async(req,res)=>{
   const send=(status,data)=>{res.writeHead(status,{'content-type':'application/json'});res.end(JSON.stringify(data));};
