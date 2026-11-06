@@ -24,3 +24,14 @@
 .admin-mode .gallery-dialog-form .gallery-dialog-actions button{background:#ed7a1e;color:#fff;border:1px solid #c76513}
 .admin-mode .gallery-dialog-form .gallery-dialog-actions a{background:#f7f9f7;color:#315148;border:1px solid #bfcfc6}
 @media(max-width:540px){.admin-mode dialog.gallery-admin-dialog{padding:12px;max-height:calc(100dvh - 20px)}.admin-mode .gallery-form-grid{grid-template-columns:1fr}}
+
+/* Click existing photo to edit its media and text, with no change to its delete action. */
+.admin-mode .gallery-edit-tile .gallery-photo-open{display:block;position:relative;cursor:pointer;overflow:hidden;border-radius:6px}
+.admin-mode .gallery-edit-tile .gallery-photo-open img,.admin-mode .gallery-edit-tile .gallery-photo-open video{width:100%;height:100%;object-fit:cover;display:block}
+.admin-mode .gallery-edit-tile .gallery-photo-open:focus-visible{outline:3px solid #d87218;outline-offset:3px}
+.admin-mode .gallery-edit-tile .gallery-photo-open:hover{filter:brightness(.94)}
+.admin-mode .gallery-edit-dialog .gallery-edit-preview{height:185px;width:100%;display:flex;align-items:center;justify-content:center;border-radius:9px;overflow:hidden;background:#f0f4f2;margin:0 0 13px}
+.admin-mode .gallery-edit-dialog .gallery-edit-preview img,.admin-mode .gallery-edit-dialog .gallery-edit-preview video{height:100%;width:100%;object-fit:contain;display:block}
+.admin-mode .gallery-edit-dialog .gallery-form-grid label{display:flex;flex-direction:column;gap:5px}
+.admin-mode .gallery-edit-dialog .gallery-form-grid input[type="file"]{font-size:12px}
+.admin-mode .gallery-edit-dialog .gallery-form-grid input[type="text"],.admin-mode .gallery-edit-dialog .gallery-form-grid input[type="number"],.admin-mode .gallery-edit-dialog .gallery-form-grid input[type="url"]{width:100%;min-height:38px}
