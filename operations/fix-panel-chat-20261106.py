@@ -3,7 +3,7 @@ import os,pathlib,hashlib,urllib.request,subprocess,tempfile,pwd,time
 assert os.environ.get('RUNNER_NAME')=='gerente-vps'
 root=pathlib.Path('/home/sasuites/htdocs/suitescrepusculo.com.br')
 assert root.is_dir() and root.resolve()==root
-ref='53c1c218621c021c2a61e56ee34cc8e9bc598c67'
+ref='68d1fd9eed4b0f7c61b6f3320ae148e47635f998'
 manifest={
 'assets/js/panel-voice.js':('5112e67de12586763e904356f57fa1ae480d1ea05a0328bb77fe367ac53d87cf','65d2e539c224843432035a255fa7a6f7cb5a86a31433ff61a4e1d3ae554a9a20'),
 'app/Views/layout.php':('e88721a69b868b7a44585fa78c40fd142c658da3149a93908320a860aaa1eeec','eb89828c495ad5911eafc1fcb54120024fe68473ebef1c5f7c58975c90852fb3')}
@@ -12,7 +12,7 @@ def fetch(path,digest):
  assert hashlib.sha256(data).hexdigest()==digest,'Source integrity '+path
  return data
 payload={p:fetch(p,v[1]) for p,v in manifest.items()}
-qa=fetch('tests/panel-chat-regression-20261106.mjs','1cc95b1f4bffa89d261fa771dffbdce7e543fe3dd1fcf75af872b8aa54b48ed1')
+qa=fetch('tests/panel-chat-regression-20261106.mjs','2b99782865fcdf599609f67efa3a1598695b13569e08dd58fcc6a6db28fb37cd')
 original={}
 for p,v in manifest.items():
  f=root/p;assert f.is_file() and not f.is_symlink()
