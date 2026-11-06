@@ -12,6 +12,15 @@ layout=(root/'app/Views/layout.php').read_text()
 assert '<summary>CRM</summary>' not in layout and 'Chat e voz</button>' in layout
 for name in ['suites-crepusculo-attendance.service','suites-crepusculo-messages.service','sa-crm-whatsapp-gateway.service']:
  assert subprocess.check_output(['systemctl','is-active',name],text=True).strip()=='active'
+smoke=urllib.request.urlopen('https://raw.githubusercontent.com/superamplitude/sutiescrepusculos/6af5942a51e1c9daf515d4b10abc8a44d137174f/tests/messages-transaction-smoke-20261106.php',timeout=20).read()
+assert hashlib.sha256(smoke).hexdigest()=='1560a9b4b706dac5cd6d6fd2699c3c2d4266bef798f0abd8f4d41ba1e96fb4c5'
+subprocess.run(['php','-l'],input=smoke,check=True,capture_output=True)
+tested=subprocess.run(['sudo','-n','-u','sasuites','php'],input=smoke,capture_output=True,timeout=60)
+assert tested.returncode==0,'Actual message pipeline failed: '+tested.stderr.decode()[-1600:]
+print(tested.stdout.decode(),end='')
+assert hashlib.sha256(pathlib.Path('/opt/waas/app/suites-session-registration.mjs').read_bytes()).hexdigest()=='66323a3abf14526b0388395c69dc8cfabb7c521e56eaf761be6e0eabb31f08d9'
+assert hashlib.sha256(pathlib.Path('/opt/suites-crepusculo-attendance/calls-worker.mjs').read_bytes()).hexdigest()=='5f12d5bd6a5f674b746e382b10537e04651b622ed1b2226b5e8039bfa9f436b5'
+assert hashlib.sha256(pathlib.Path('/opt/suites-crepusculo-attendance/context.php').read_bytes()).hexdigest()=='e93655ff7aa93e719420c692a3bf9d2930b0a9731a45177059a87f7f65deb399'
 code=r"""
 require '/home/sasuites/htdocs/suitescrepusculo.com.br/app/bootstrap.php';
 $s=new App\Services\SuitesMessagesService();$status=$s->status();$state=$status['status']??'offline';
