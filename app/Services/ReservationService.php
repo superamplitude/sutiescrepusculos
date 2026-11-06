@@ -19,11 +19,26 @@ final class ReservationService{
     if($guests>(int)$r['capacity'])throw new \RuntimeException('Capacidade excedida.');
     $d1=new \DateTimeImmutable($in);$d2=new \DateTimeImmutable($out);$n=(int)$d1->diff($d2)->days;
     if($n<1)throw new \RuntimeException('Período inválido.');
-    $total=(float)$r['base_price']*$n;
-    if($guests>1)$total+=(($guests-1)*(float)$r['extra_guest_fee']*$n);
-    $s=$pdo->prepare("SELECT price FROM tariffs WHERE room_id=? AND active=1 AND start_date<=? AND end_date>=? ORDER BY priority DESC,id DESC LIMIT 1");
-    $s->execute([$room,$in,$out]);
-    if($t=$s->fetch())$total=(float)$t['price']*$n;
+    // Each occupied night uses the tariff configured in Diárias for this room.
+    // The checkout date is exclusive. Never substitute the legacy base_price.
+    $stmt=$pdo->prepare("SELECT id,start_date,end_date,price,min_nights,priority
+      FROM tariffs WHERE room_id=? AND active=1 AND start_date<? AND end_date>?
+      ORDER BY priority DESC,id DESC");
+    $stmt->execute([$room,$out,$in]);
+    $rates=$stmt->fetchAll();
+    $total=0.0;
+    for($date=$d1;$date<$d2;$date=$date->modify('+1 day')){
+      $night=$date->format('Y-m-d');
+      $selected=null;
+      foreach($rates as $rate){
+        if($night>=$rate['start_date'] && $night<$rate['end_date']){
+          $selected=$rate;
+          break;
+        }
+      }
+      if($selected===null)throw new \RuntimeException('Não existe diária cadastrada para '. $date->format('d/m/Y') .'. Cadastre a tarifa da unidade em Diárias antes de reservar.');
+      $total+=(float)$selected['price'];
+    }
     return $total;
   }
   public function create(array $d):int{
