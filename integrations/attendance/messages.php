@@ -60,7 +60,7 @@ function processSuitesWhatsapp(array $input): array {
   try{(new \App\Services\CrmSyncService(1))->syncConversation($cid);}catch(Throwable){}
   $out=['skip'=>$answer==='','answer'=>$answer];
   if($hasAudio&&$answer!==''){
-   try{$out['wav']=base64_encode((new \App\Services\PanelVoiceService())->speech(mb_substr($answer,0,550)));}catch(Throwable){$out['audio_error']=true;}
+   try{$out['wav']=base64_encode((new \App\Services\PanelVoiceService())->speech($answer));}catch(Throwable){$out['audio_error']=true;}
   }
   return $out;
  }finally{$pdo->prepare('SELECT RELEASE_LOCK(?)')->execute([$lock]);}

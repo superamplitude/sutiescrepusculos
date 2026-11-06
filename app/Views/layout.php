@@ -82,10 +82,11 @@
       </div>
     </details>
 
-    <details name="admin-menu" class="admin-nav-group" <?=in_array($adminPage,['ai','reports','integrations'],true)?'open':''?>>
+    <details name="admin-menu" class="admin-nav-group" <?=in_array($adminPage,['ai','voice_settings','reports','integrations'],true)?'open':''?>>
       <summary>IA e resultados</summary>
       <div class="admin-nav-group-links">
         <a href="index.php?p=ai" class="<?=$adminPage==='ai'?'active':''?>"><span class="nav-dot"></span><span>Inteligência Artificial</span></a>
+        <a href="index.php?p=voice_settings" class="<?=$adminPage==='voice_settings'?'active':''?>"><span class="nav-dot"></span><span>Voz e atendimento</span></a>
         <a href="index.php?p=reports" class="<?=$adminPage==='reports'?'active':''?>"><span class="nav-dot"></span><span>Relatórios</span></a>
         <?php if(Auth::isSuperAdmin()):?><a href="index.php?p=integrations" class="<?=$adminPage==='integrations'?'active':''?>"><span class="nav-dot"></span><span>Integrações</span></a><?php endif;?>
       </div>

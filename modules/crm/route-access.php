@@ -3,7 +3,7 @@ use App\Core\DB;use App\Core\Auth;use App\Core\Csrf;use App\Core\U;use App\Core\
 if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
 
   // CRM_AUTO_SYNC_AEL: mantém o CRM importado do AEL ligado aos dados reais do estabelecimento.
-  try{(new \App\Services\CrmSyncService(currentCompanyId()))->syncAll();}catch(Throwable $crmSyncError){@file_put_contents(dirname(__DIR__).'/storage/logs/app.log',date('c').' CRM_SYNC '.$crmSyncError->getMessage().PHP_EOL,FILE_APPEND);}
+  try{(new \App\Services\CrmSyncService(currentCompanyId()))->syncAll();}catch(Throwable $crmSyncError){@file_put_contents(dirname(__DIR__,2).'/storage/logs/app.log',date('c').' CRM_SYNC '.$crmSyncError->getMessage().PHP_EOL,FILE_APPEND);}
 
   Auth::requireLogin();
   $crmCompanyId=currentCompanyId();

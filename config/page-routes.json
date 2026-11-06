@@ -1,0 +1,484 @@
+{
+  "logout": {
+    "file": "logout.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "login": {
+    "file": "login.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "home": {
+    "file": "home.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "about": {
+    "file": "about.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "location": {
+    "file": "location.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "accommodations": {
+    "file": "accommodations.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "room": {
+    "file": "room.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "gallery_public": {
+    "file": "gallery_public.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "page": {
+    "file": "page.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "promotions_public": {
+    "file": "promotions_public.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "amenities_public": {
+    "file": "amenities_public.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "gastronomy": {
+    "file": "gastronomy.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "faq": {
+    "file": "faq.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "contact": {
+    "file": "contact.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "policies": {
+    "file": "policies.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "things_to_do": {
+    "file": "things_to_do.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "availability": {
+    "file": "availability.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "reserve": {
+    "file": "reserve.php",
+    "access": "public",
+    "methods": [
+      "POST"
+    ]
+  },
+  "traveler_logout": {
+    "file": "traveler_logout.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "traveler_switch": {
+    "file": "traveler_switch.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "traveler": {
+    "file": "traveler.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "voucher": {
+    "file": "voucher.php",
+    "access": "public",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "dashboard": {
+    "file": "dashboard.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "site_admin": {
+    "file": "site_admin.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "hero": {
+    "file": "hero.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "property": {
+    "file": "property.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "rooms": {
+    "file": "rooms.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "reservations": {
+    "file": "reservations.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "map": {
+    "file": "map.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "map_reservation_api": {
+    "file": "map_reservation_api.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "map_action": {
+    "file": "map_action.php",
+    "access": "admin",
+    "methods": [
+      "POST"
+    ]
+  },
+  "block_edit": {
+    "file": "block_edit.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "reservation_edit": {
+    "file": "reservation_edit.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "reservation_new": {
+    "file": "reservation_new.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "guests": {
+    "file": "guests.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "tariffs": {
+    "file": "tariffs.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "promotions": {
+    "file": "promotions.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "payments": {
+    "file": "payments.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "contacts_admin": {
+    "file": "contacts_admin.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "content": {
+    "file": "content.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "media_delete": {
+    "file": "media_delete.php",
+    "access": "admin",
+    "methods": [
+      "POST"
+    ]
+  },
+  "gallery": {
+    "file": "gallery.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "attractions": {
+    "file": "attractions.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "reviews": {
+    "file": "reviews.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "crm360": {
+    "file": "crm360.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "crm_contacts": {
+    "file": "crm_contacts.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "crm_leads": {
+    "file": "crm_leads.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "crm_tasks": {
+    "file": "crm_tasks.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "reports": {
+    "file": "reports.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "ai": {
+    "file": "ai.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "ai_test": {
+    "file": "ai_test.php",
+    "access": "admin",
+    "methods": [
+      "POST"
+    ]
+  },
+  "whatsapp_rnl": {
+    "file": "whatsapp_rnl.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "whatsapp_rnl_legacy": {
+    "file": "whatsapp_rnl_legacy.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "ical_save": {
+    "file": "ical_save.php",
+    "access": "admin",
+    "methods": [
+      "POST"
+    ]
+  },
+  "ical_sync": {
+    "file": "ical_sync.php",
+    "access": "admin",
+    "methods": [
+      "POST"
+    ]
+  },
+  "integrations": {
+    "file": "integrations.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "users": {
+    "file": "users.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "user_edit": {
+    "file": "user_edit.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "audit": {
+    "file": "audit.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "messages": {
+    "file": "messages.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "voice_settings": {
+    "file": "voice_settings.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  }
+}

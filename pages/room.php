@@ -2,7 +2,7 @@
 use App\Core\DB;use App\Core\Auth;use App\Core\Csrf;use App\Core\U;use App\Core\Audit;use App\Core\Secret;use App\Core\Site;use App\Services\ReservationService;use App\Services\GeminiService;use App\Services\UploadService;use App\Services\ICalService;use App\Controllers\WhatsappController;
 if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
 
-  if($p==='room'){
+
     $s=$pdo->prepare("SELECT * FROM rooms WHERE id=? AND active=1 AND status='active'");$s->execute([(int)($_GET['id']??0)]);$r=$s->fetch();if(!$r){http_response_code(404);render('Não encontrado','<h1>Quarto não encontrado</h1>');exit;}
     $ams=$pdo->prepare("SELECT a.name FROM amenities a JOIN room_amenities ra ON ra.amenity_id=a.id WHERE ra.room_id=? ORDER BY a.name");$ams->execute([$r['id']]);
     $med=$pdo->prepare("SELECT * FROM media WHERE scope='room' AND entity_id=? AND active=1 ORDER BY is_cover DESC,sort_order,id");$med->execute([$r['id']]);$media=$med->fetchAll();
@@ -14,7 +14,4 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
     foreach($ams->fetchAll() as $a)$h.="<span>".U::e($a['name'])."</span>";
     $h.="</div><h3>Regras específicas</h3><p>".nl2br(U::e($r['rules']))."</p><a class=btn href=\"index.php?p=availability&room={$r['id']}\">Reservar</a></div>";
     render($r['name'],$h);exit;
-  }
-  $rs=$pdo->query("SELECT * FROM rooms WHERE active=1 AND status='active' ORDER BY name")->fetchAll();$h="<h1>Acomodações</h1><div class=cards>";
-  foreach($rs as $r){$img=$r['cover_image']?'<img class="card-cover" src="'.U::e(safeUrl($r['cover_image'])).'" alt="'.U::e($r['name']).'">':'';$h.="<article class=\"card room-card\">$img<h2>".U::e($r['name'])."</h2><p>".U::e($r['short_description'])."</p><b>".money((float)$r['base_price'])."</b><a href=\"index.php?p=room&id={$r['id']}\">Detalhes</a></article>";}
-  render('Acomodações',$h.'</div>');exit;
+  

@@ -3,7 +3,7 @@ use App\Core\DB;use App\Core\Auth;use App\Core\Csrf;use App\Core\U;use App\Core\
 if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
 
   $x=$pdo->query("SELECT * FROM property WHERE id=1")->fetch();
-  if($p==='about'){
+  
     $isDemoAbout=trim((string)($x['name']??''))==='Pousada Brisa do Mar';
     $aboutMedia=$pdo->query("SELECT file_path,url FROM media WHERE scope='property' AND entity_id=1 AND active=1 AND type='image' ORDER BY is_cover DESC,sort_order,id LIMIT 3")->fetchAll();
     $aboutPaths=[];foreach($aboutMedia as $m){$src=safeUrl($m['file_path']?:$m['url']);if($src)$aboutPaths[]=$src;}
@@ -17,13 +17,4 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
     $h.='<section class="public-editorial-grid reverse '.($aboutPhoto2?'':'no-image').'"><div><span class=eyebrow>Sobre</span><h2>Conforto, localização e atendimento simples</h2><p>'.nl2br(U::e($x['concept'])).'</p><p>'.nl2br(U::e($x['region_info'])).'</p></div>'.$aboutPhoto2.'</section>';
     $h.='<section class="portal-section"><div class=portal-title><span class=eyebrow>Para quem é</span><h2>Uma hospedagem para diferentes formas de viajar</h2></div><div class=cards><div class=card><h3>Casais</h3><p>Suítes confortáveis, opções com varanda e clima tranquilo para uma viagem a dois.</p></div><div class=card><h3>Famílias</h3><p>Acomodações para até cinco hóspedes, piscina e estrutura prática para viajar com crianças.</p></div><div class=card><h3>Fim de semana</h3><p>Localização conveniente para aproveitar Centro Histórico, praias, gastronomia e passeios.</p></div></div></section>';
     render('A Pousada',$h,$x['short_description']?:'');exit;
-  }
-  $addr=trim(($x['address']??'').' '.($x['address_number']??'').' - '.($x['neighborhood']??'').' - '.($x['city']??'').'/'.($x['state']??''));
-  $map='';
-  if($x['latitude']!==null&&$x['longitude']!==null&&$x['latitude']!==''&&$x['longitude']!==''){
-    $lat=(float)$x['latitude'];$lon=(float)$x['longitude'];$delta=.015;
-    $bbox=($lon-$delta).','.($lat-$delta).','.($lon+$delta).','.($lat+$delta);
-    $map='<iframe class="map-frame" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.openstreetmap.org/export/embed.html?bbox='.rawurlencode($bbox).'&layer=mapnik&marker='.rawurlencode($lat.','.$lon).'"></iframe>';
-  }
-  $h='<div class="public-page-hero"><span class=eyebrow>Localização</span><h1>Chegue com facilidade</h1><p>'.U::e($addr).'</p></div><div class=card><p>'.nl2br(U::e($x['directions'])).'</p>'.$map.($x['map_url']?'<a class=btn target=_blank rel=noopener href="'.U::e(safeUrl($x['map_url'])).'">Abrir rota</a>':'').'</div>';
-  render('Localização',$h);exit;
+  

@@ -22,7 +22,8 @@ final class PanelVoiceController {
         if (($_SERVER['REQUEST_METHOD']??'')!=='POST') self::json(['ok'=>false,'error'=>'Método inválido.'],405);
         Csrf::check();
         $text=trim((string)($_POST['text']??''));$kind=(string)($_POST['kind']??'speech');
-        if ($text==='' || mb_strlen($text)>550) self::json(['ok'=>false,'error'=>'Use de 1 a 550 caracteres.'],422);
+        $limit=$kind==='speech'?8000:550;
+        if ($text==='' || mb_strlen($text)>$limit) self::json(['ok'=>false,'error'=>'Mensagem vazia ou muito longa.'],422);
         if (!in_array($kind,['speech','answer'],true)) self::json(['ok'=>false,'error'=>'Ação inválida.'],422);
         $now=time();$rate=$_SESSION['_panel_voice_rate']??['since'=>$now,'count'=>0];
         if ($now-$rate['since']>=60) $rate=['since'=>$now,'count'=>0];
@@ -30,9 +31,9 @@ final class PanelVoiceController {
         $rate['count']++;$_SESSION['_panel_voice_rate']=$rate;session_write_close();
         try {
             if ($kind==='answer') {
-                $r=(new GeminiService())->ask('Oriente o usuário do painel da pousada sobre reservas, acomodações, mapa de diárias e atendimento. Responda em até 400 caracteres. Não afirme ter executado ações. Pergunta: '.$text);
+                $r=(new GeminiService())->ask('Oriente o usuário do painel da pousada sobre reservas, acomodações, mapa de diárias e atendimento. Converse em uma ou duas frases conectadas, sem saudações repetidas e com no máximo uma pergunta. Não afirme ter executado ações. Pergunta: '.$text);
                 if (empty($r['ok'])) throw new \RuntimeException('O atendimento por IA está indisponível.');
-                self::json(['ok'=>true,'answer'=>mb_substr(trim((string)$r['answer']),0,550)]);
+                self::json(['ok'=>true,'answer'=>trim((string)$r['answer'])]);
             }
             $wav=$service->speech($text);header('Content-Type: audio/wav');header('Content-Length: '.strlen($wav));echo $wav;exit;
         } catch (\Throwable) {self::json(['ok'=>false,'error'=>'Não foi possível concluir o atendimento de voz agora.'],503);}

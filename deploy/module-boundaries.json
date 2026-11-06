@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "router": "config/page-routes.json",
+  "voiceProfileTable": "suites_voice_profiles",
+  "protectedVoiceSources": [
+    "app/Services/VoiceProfileService.php",
+    "app/Services/PanelVoiceService.php",
+    "app/Services/AiConversationService.php",
+    "app/Controllers/PanelVoiceController.php",
+    "integrations/attendance/messages.php",
+    "integrations/attendance/context.php",
+    "integrations/voice/suites-voice-profile.mjs"
+  ],
+  "rules": [
+    "One route maps to one own page file.",
+    "Page/layout deployments must preserve voice-source hashes and never write profile rows.",
+    "Voice changes require an explicit voice-scoped release, matching baseline hashes and real audio validation.",
+    "Never replace the app with an old all-in-one source.",
+    "Preserve existing account pairing, credentials and gateways."
+  ]
+}
