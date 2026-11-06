@@ -167,7 +167,7 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
         .'<td class="room-price-current">'.(isset($todayRates[$rid])?money((float)$todayRates[$rid]['price']):'Sem diária')
         .'<small>'.(isset($todayRates[$rid])?'Tarifa: '.U::e($todayRates[$rid]['name']):'Cadastre em Diária').'</small></td>'
         .'<td><div class="room-price-actions"><a class="btn secondary small" href="'.$editUrl.'&section=diaria#room-pricing">Diária</a><a class="btn secondary small" href="'.$editUrl.'&section=pacote#room-pricing">Pacote</a></div></td>'
-        .'<td><div class="table-actions"><a class="btn secondary small" href="'.$editUrl.'">Editar</a>'
+        .'<td><div class="table-actions"><a class="btn secondary small" href="'.$editUrl.'&form=edit">Editar</a>'
         .'<form method="post" class="inline-form" onsubmit="return confirm(\'Excluir esta unidade? Reservas históricas serão preservadas.\')">'
         .Csrf::field().'<input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="'.$rid.'">'
         .'<button class="danger small" type="submit">Excluir</button></form></div></td></tr>';
@@ -179,8 +179,8 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   if($edit){
     $rid=(int)$edit['id'];
     $section=(string)($_GET['section']??'');
-    $h.='<button type="button" class="btn" data-room-open="roomEditDialog">Editar unidade</button>'
-      .'<button type="button" class="btn" data-room-open="roomPhotosDialog">Fotos da unidade</button>'
+    $h.='<a class="btn" href="index.php?p=rooms&view=edit&id='.$rid.'&form=edit" data-room-open="roomEditDialog">Editar unidade</a>'
+      .'<a class="btn" href="index.php?p=rooms&view=edit&id='.$rid.'&form=photos" data-room-open="roomPhotosDialog">Fotos da unidade</a>'
       .'<a class="btn room-section-button'.($section==='diaria'?' is-active':'').'" href="index.php?p=rooms&view=edit&id='.$rid.'&section=diaria#room-pricing">Diária</a>'
       .'<a class="btn room-section-button'.($section==='pacote'?' is-active':'').'" href="index.php?p=rooms&view=edit&id='.$rid.'&section=pacote#room-pricing">Pacote</a>'
       .'<form method="post" class="room-toolbar-delete" onsubmit="return confirm(\'Excluir esta unidade? Reservas históricas serão preservadas.\')">'
@@ -189,7 +189,7 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   }
   $h.='</div>';
   if($edit){
-    $h.='<dialog id="roomEditDialog" class="room-admin-dialog" aria-labelledby="roomEditTitle"><div class="room-dialog-head"><h2 id="roomEditTitle">Editar unidade · '.U::e($edit['name']).'</h2><button type="button" data-room-close aria-label="Fechar">×</button></div>';
+    $h.='<dialog id="roomEditDialog" class="room-admin-dialog" aria-labelledby="roomEditTitle"'.(($_GET['form']??'')==='edit'?' open data-room-auto="1"':'').'><div class="room-dialog-head"><h2 id="roomEditTitle">Editar unidade · '.U::e($edit['name']).'</h2><a href="index.php?p=rooms&view=edit&id='.(int)$edit['id'].'" data-room-close aria-label="Fechar">×</a></div>';
   }
   $h.='<div class=stack-layout><form method=post enctype="multipart/form-data" class="card room-edit-form">'.Csrf::field().'<input type=hidden name=action value=save><input type=hidden name=id value="'.U::e($x['id']).'">'.($edit?'':'<h2>Nova unidade</h2>').'<div class=grid2>'.row('Código interno','code',$x['code']).row('Nome público','name',$x['name']).'<label>Tipo de quarto<select name=type><option value="">Selecione</option>';foreach(['Suíte','Apartamento','Quarto duplo','Quarto triplo','Quarto família','Chalé','Cabana','Dormitório'] as $op)$h.='<option '.($x['type']===$op?'selected':'').'>'.U::e($op).'</option>';$h.='</select></label><fieldset class="room-status-switch"><legend>Status operacional</legend><div class="room-status-options"><label><input type="radio" name="status" value="active" '.($x['status']==='active'?'checked':'').'><span>Ligado</span></label><label><input type="radio" name="status" value="inactive" '.($x['status']==='inactive'?'checked':'').'><span>Desligado</span></label><label><input type="radio" name="status" value="maintenance" '.($x['status']==='maintenance'?'checked':'').'><span>Manutenção</span></label></div></fieldset></div>'.row('Descrição curta','short_description',$x['short_description'],'textarea').row('Descrição completa','description',$x['description'],'textarea').'<div class=grid3>'.row('Capacidade máxima','capacity',$x['capacity'],'number').row('Adultos','adults',$x['adults'],'number').row('Crianças','children',$x['children'],'number')."</div><h3>Camas</h3><div class=grid3>";
   foreach(['casal'=>'Casal','queen'=>'Queen','king'=>'King','solteiro'=>'Solteiro','solteiro_xl'=>'Solteiro XL','beliche'=>'Beliche','sofa_cama'=>'Sofá-cama','dobravel'=>'Dobrável','murphy'=>'Murphy'] as $b=>$lab)$h.=row($lab,"bed_$b",$beds[$b]??0,'number');
@@ -201,11 +201,11 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   }
   $h.='<h3>Taxas e condições</h3><div class=grid3>'.row('Hóspede extra','extra_guest_fee',$x['extra_guest_fee'],'number').row('Taxa de limpeza','cleaning_fee',$x['cleaning_fee'],'number').row('Noites mínimas','min_nights',$x['min_nights'],'number').row('Noites máximas','max_nights',$x['max_nights'],'number').'</div><h3>Comodidades</h3><div class=amenities>';
   $cat='';foreach($ams as $a){if($cat!==$a['category']){$cat=$a['category'];$h.='<h4>'.U::e($cat).'</h4>';}$h.='<label class=check><input type=checkbox name="amenities[]" value="'.$a['id'].'" '.(in_array($a['id'],$selected)?'checked':'').'> '.U::e($a['name']).'</label>';}
-  $h.='</div>'.row('Publicar esta unidade','active',$x['active'],'checkbox').'<div class="form-actions"><button type="submit">'.($edit?'Salvar alterações':'Adicionar unidade').'</button>'.($edit?'<button type="button" class="btn secondary" data-room-close>Cancelar</button>':'<a class="btn secondary" href="index.php?p=rooms">Cancelar</a>').'</div></form>';
+  $h.='</div>'.row('Publicar esta unidade','active',$x['active'],'checkbox').'<div class="form-actions"><button type="submit">'.($edit?'Salvar alterações':'Adicionar unidade').'</button>'.($edit?'<a class="btn secondary" href="index.php?p=rooms&view=edit&id='.(int)$edit['id'].'" data-room-close>Cancelar</a>':'<a class="btn secondary" href="index.php?p=rooms">Cancelar</a>').'</div></form>';
   if($edit){
     $h.='</div></dialog>';
-    $h.='<dialog id="roomPhotosDialog" class="room-admin-dialog room-photo-dialog" aria-labelledby="roomPhotosTitle">'
-      .'<div class="room-dialog-head"><h2 id="roomPhotosTitle">Fotos e vídeos · '.U::e($edit['name']).'</h2><button type="button" data-room-close aria-label="Fechar">×</button></div>'
+    $h.='<dialog id="roomPhotosDialog" class="room-admin-dialog room-photo-dialog" aria-labelledby="roomPhotosTitle"'.(($_GET['form']??'')==='photos'?' open data-room-auto="1"':'').'>'
+      .'<div class="room-dialog-head"><h2 id="roomPhotosTitle">Fotos e vídeos · '.U::e($edit['name']).'</h2><a href="index.php?p=rooms&view=edit&id='.(int)$edit['id'].'" data-room-close aria-label="Fechar">×</a></div>'
       .'<form method="post" enctype="multipart/form-data" class="room-media-form">'
       .Csrf::field().'<input type="hidden" name="action" value="room_media_add"><input type="hidden" name="id" value="'.(int)$edit['id'].'">'
       .'<div class="grid2"><label>Foto principal<input type="file" name="cover_image" accept="image/jpeg,image/png,image/webp"></label>'
@@ -214,7 +214,7 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
       .row('URL do vídeo (HTTPS)','video_url',$x['video_url'])
       .row('Legenda das novas fotos','gallery_caption')
       .row('Texto alternativo','gallery_alt')
-      .'</div><div class="room-dialog-actions"><button type="button" class="btn" data-room-close>Cancelar</button><button type="submit">Salvar mídias</button></div></form>'
+      .'</div><div class="room-dialog-actions"><a href="index.php?p=rooms&view=edit&id='.(int)$edit['id'].'" class="btn" data-room-close>Cancelar</a><button type="submit">Salvar mídias</button></div></form>'
       .'<div class="room-current-media"><h3>Fotos cadastradas</h3>';
     if($x['cover_image'])$h.='<figure><img src="'.U::e(safeUrl($x['cover_image'])).'" alt="Capa atual"><figcaption>Capa atual</figcaption></figure>';
     foreach($media as $m){
@@ -265,5 +265,5 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
     }
   }
   $h.=($edit?'':'</div>');
-  $h.='<script defer src="assets/js/rooms-admin.js?v=20261106b"></script>';
+  // Dialog controller is loaded once from the page layout.
   render($edit?'Editar unidade':'Nova unidade',$h);exit;
