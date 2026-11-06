@@ -3,16 +3,16 @@ import os,pathlib,hashlib,urllib.request,subprocess,tempfile,pwd,time
 assert os.environ.get('RUNNER_NAME')=='gerente-vps'
 root=pathlib.Path('/home/sasuites/htdocs/suitescrepusculo.com.br')
 assert root.is_dir() and root.resolve()==root
-ref='df0ebef12d6bf6596c18a3e1338004b14b1170f7'
+ref='53c1c218621c021c2a61e56ee34cc8e9bc598c67'
 manifest={
-'assets/js/panel-voice.js':('5112e67de12586763e904356f57fa1ae480d1ea05a0328bb77fe367ac53d87cf','054cbb568fbf61fde373c2a13eae933039a3eb9ee96c52f7920411c16d929b2d'),
-'app/Views/layout.php':('709ac40d99fd18368a1f534b3c7c9295e1204fb4521acaeb4ebe1202eab60924','50d029a47e9d04b6158450d757ac60bd9ef047605abec1e0e71c7bd0480e46f4')}
+'assets/js/panel-voice.js':('5112e67de12586763e904356f57fa1ae480d1ea05a0328bb77fe367ac53d87cf','65d2e539c224843432035a255fa7a6f7cb5a86a31433ff61a4e1d3ae554a9a20'),
+'app/Views/layout.php':('e88721a69b868b7a44585fa78c40fd142c658da3149a93908320a860aaa1eeec','eb89828c495ad5911eafc1fcb54120024fe68473ebef1c5f7c58975c90852fb3')}
 def fetch(path,digest):
  data=urllib.request.urlopen('https://raw.githubusercontent.com/superamplitude/sutiescrepusculos/'+ref+'/'+path,timeout=20).read()
  assert hashlib.sha256(data).hexdigest()==digest,'Source integrity '+path
  return data
 payload={p:fetch(p,v[1]) for p,v in manifest.items()}
-qa=fetch('tests/panel-chat-regression-20261106.mjs','2657ee52ff9cd9918cdb69bc4fa731182e8eea9b283fb2ae6070cec6b22f87cf')
+qa=fetch('tests/panel-chat-regression-20261106.mjs','1cc95b1f4bffa89d261fa771dffbdce7e543fe3dd1fcf75af872b8aa54b48ed1')
 original={}
 for p,v in manifest.items():
  f=root/p;assert f.is_file() and not f.is_symlink()
@@ -44,3 +44,19 @@ except BaseException:
  print('REVERTED_IN_MEMORY=1')
  raise
 finally:pathlib.Path(qpath).unlink(missing_ok=True)
+
+
+# Inspect only route metadata; do not export internal source or credentials.
+import json,re
+p=pathlib.Path('/opt/waas/app/server.mjs')
+if p.is_file():
+ text=p.read_text()
+ paths=sorted(set(re.findall(r'["\x27](/(?:sessions|health|api|webhook)[A-Za-z0-9_:/.*?{}-]*)["\x27]',text)))
+ print('MESSAGING_ROUTE_NAMES',json.dumps(paths))
+ print('MESSAGING_FEATURES',json.dumps({k:bool(re.search(v,text,re.I)) for k,v in {'inbound_events':'messages.upsert','audio_download':'downloadMediaMessage','audio_send':'audio:|audio\\s*\\}', 'webhook':'webhook','event_stream':'text/event-stream'}.items()}))
+ print('MESSAGING_GATEWAY_CODE_SHA256',hashlib.sha256(p.read_bytes()).hexdigest())
+for name in ['wacalls.mjs','voice-ai-live.mjs','panel-natural-voice.mjs']:
+ p=pathlib.Path('/opt/superamplitude/crm/lib')/name
+ print('LIBRARY_SHA256',name,hashlib.sha256(p.read_bytes()).hexdigest())
+p=pathlib.Path('/opt/superamplitude/crm/package.json')
+cfg=json.loads(p.read_text());print('CRM_WERIFT_VERSION',cfg.get('dependencies',{}).get('werift'))
