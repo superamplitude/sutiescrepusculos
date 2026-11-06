@@ -3,8 +3,7 @@ declare(strict_types=1);
 if(PHP_SAPI!=='cli'){http_response_code(404);exit;}
 require '/home/sasuites/htdocs/suitescrepusculo.com.br/app/bootstrap.php';
 use App\Core\DB;use App\Core\Site;
-$action=$argv[1]??'';$input=json_decode((string)file_get_contents('php://stdin')?:'{}',true,512,JSON_THROW_ON_ERROR);
-if($action==='message'){require __DIR__.'/messages.php';echo json_encode(processSuitesWhatsapp($input),JSON_UNESCAPED_UNICODE);exit;}
+$action=$argv[1]??'';$input=json_decode($argv[2]??'{}',true,512,JSON_THROW_ON_ERROR);
 if($action==='context'){
  $pdo=DB::pdo();$enabled=(bool)$pdo->query("SELECT enabled FROM ai_config WHERE id=1")->fetchColumn();
  $enabled=$enabled && Site::get('chat_default_mode','hybrid')!=='human';
