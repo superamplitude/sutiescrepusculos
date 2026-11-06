@@ -38,8 +38,10 @@ O manifesto em `deploy/runtime-manifest-20261105.json` registra os hashes do có
 
 ## Pendente de homologação externa
 
-A voz em chamada foi confirmada pelo proprietário. A sessão independente de mensagens estava offline ao terminar a publicação de 06/11/2026. A homologação de texto/áudio enviado e recebido depende de parear essa sessão e testar com outro aparelho. Testes de contrato e serviço ativo não comprovam entrega externa.
+A voz em chamada foi confirmada pelo proprietário e permanece congelada por pedido dele. O primeiro pareamento de mensagens chegou a abrir e foi revogado com 401. A correção isolada para o Suítes usa Baileys 6.7.23, mantendo a 7.0.0-rc14 das demais sessões; implantação aprovada na [execução 42208537603](https://github.com/superamplitude/Gerente-VPS/actions/runs/42208537603), sem mudança ou reinício da voz. Um novo QR foi gerado.
 
-O diretório `integrations/attendance` contém um protótipo anterior não instalado. A voz publicada usa os controladores PHP em `app/` e a Central de Comunicação existente; esse protótipo não é outro serviço em execução.
+O teste real de processamento no banco e na IA produziu resposta de 187 caracteres, ignorou duplicidade e respeitou o modo Humano. Todos os registros foram desfeitos em transação. A homologação de texto/áudio externo continua dependendo de parear o QR novo e confirmar entrega/resposta em outro aparelho; serviço ativo e teste interno não comprovam essa entrega.
+
+O arquivo `integrations/attendance/server.mjs` é um protótipo anterior não instalado. Os adaptadores ativos são `calls-worker.mjs` e `messages-worker.mjs`, além dos controladores PHP do painel e da Central de Comunicação existente.
 
 Nenhum backup local foi criado, nenhum backup original foi utilizado ou alterado, e os runtimes CRM/AEL não foram reiniciados.
