@@ -45,11 +45,12 @@ function processSuitesWhatsapp(array $input): array {
   $answer='';
   if($allowed&&preg_match('/\b(atendente|pessoa|humano|humana)\b/iu',$body)){
    $pdo->prepare("UPDATE conversations SET mode='human',priority='high',updated_at=NOW() WHERE id=?")->execute([$cid]);
-   $answer='Seu pedido está na fila da equipe da pousada. O histórico continuará disponível para o atendente.';
+   $answer='Um membro da nossa equipe continuará o atendimento. Seu histórico ficará disponível para evitar repetir informações.';
    $pdo->prepare("INSERT INTO messages(conversation_id,sender_type,body,created_at) VALUES(?,'staff',?,NOW())")->execute([$cid,$answer]);
   }elseif($allowed){
    $q=$pdo->prepare("SELECT sender_type,body,created_at FROM messages WHERE conversation_id=? ORDER BY id DESC LIMIT 12");$q->execute([$cid]);$history=array_reverse($q->fetchAll());
-   $availability=(new \App\Services\ChatAvailabilityService())->answer($body,$history);
+   $property=\App\Services\BusinessContextService::property();
+   $availability=\App\Services\BusinessContextService::isLodging($property)?(new \App\Services\ChatAvailabilityService())->answer($body,$history):null;
    if(!empty($availability['handled'])&&!empty($availability['answer'])){
     $answer=(string)$availability['answer'];$pdo->prepare("INSERT INTO messages(conversation_id,sender_type,body,created_at) VALUES(?,'ai',?,NOW())")->execute([$cid,$answer]);
    }else{
