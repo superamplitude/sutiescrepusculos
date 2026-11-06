@@ -15,7 +15,7 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   if($_SERVER['REQUEST_METHOD']==='POST'){
     Csrf::check();$upload=new UploadService();
     $id=(int)($_POST['id']??0);$action=$_POST['action']??'save';
-    if(in_array($action,['tariff_add','package_add','tariff_toggle','package_toggle'],true)){
+    if(in_array($action,['tariff_add','package_add','tariff_toggle','package_toggle','tariff_update','package_update'],true)){
       Auth::requirePerm('prices.edit');
       $rid=(int)($_POST['room_id']??0);
       $q=$pdo->prepare("SELECT id FROM rooms WHERE id=? AND code NOT LIKE '__deleted__%' LIMIT 1");$q->execute([$rid]);
@@ -30,6 +30,23 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
         if($q->rowCount()!==1)throw new RuntimeException('Registro de tarifa/pacote não encontrado.');
         Audit::log('room.'.$type.'.toggle','room',$rid,['record_id'=>$record]);
         U::flash('ok','Status atualizado.');U::redirect($back);
+      }
+      if(in_array($action,['tariff_update','package_update'],true)){
+        $record=(int)($_POST['record_id']??0);
+        $raw=trim((string)($_POST['price']??''));
+        if($record<1||$raw===''||!is_numeric($raw))throw new RuntimeException('Informe um valor válido.');
+        $price=(float)$raw;
+        if(!is_finite($price)||$price<0||$price>1000000)throw new RuntimeException('Valor inválido.');
+        $table=$action==='tariff_update'?'tariffs':'room_packages';
+        $q=$pdo->prepare("UPDATE $table SET price=? WHERE id=? AND room_id=?");
+        $q->execute([$price,$record,$rid]);
+        if($q->rowCount()===0){
+          $check=$pdo->prepare("SELECT id FROM $table WHERE id=? AND room_id=?");$check->execute([$record,$rid]);
+          if(!$check->fetchColumn())throw new RuntimeException('Registro de diária ou pacote não encontrado.');
+        }
+        Audit::log('room.'.$type.'.price.update','room',$rid,['record_id'=>$record,'price'=>$price]);
+        U::flash('ok',$type==='diaria'?'Valor da diária atualizado.':'Valor do pacote atualizado.');
+        U::redirect($back.'#room-pricing');
       }
       $name=trim((string)($_POST['name']??''));
       $start=(string)($_POST['start_date']??'');
