@@ -5,18 +5,27 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   Auth::requirePerm('reservations.manage');$start=$_GET['start']??date('Y-m-d');$days=15;$d0=new DateTimeImmutable($start);$rooms=$pdo->query("SELECT * FROM rooms WHERE active=1 AND status='active' ORDER BY name")->fetchAll();
   $end=$d0->modify("+$days days")->format('Y-m-d');$q=$pdo->prepare("SELECT r.*,g.name guest FROM reservations r JOIN guests g ON g.id=r.guest_id WHERE r.checkout>? AND r.checkin<? AND r.status NOT IN('cancelada','recusada','expirada')");$q->execute([$start,$end]);$res=$q->fetchAll();
   $q=$pdo->prepare("SELECT * FROM room_blocks WHERE end_date>? AND start_date<?");$q->execute([$start,$end]);$blocks=$q->fetchAll();
+  // Same rate records used by the unit's Diárias and the booking price engine.
+  $q=$pdo->prepare("SELECT room_id,name,price,start_date,end_date,priority,id FROM tariffs WHERE active=1 AND start_date<? AND end_date>? ORDER BY priority DESC,id DESC");
+  $q->execute([$end,$start]);$tariffRows=$q->fetchAll();$mapRates=[];
+  foreach($tariffRows as $rate)$mapRates[(int)$rate['room_id']][]=$rate;
   $weekday=['Sun'=>'Dom','Mon'=>'Seg','Tue'=>'Ter','Wed'=>'Qua','Thu'=>'Qui','Fri'=>'Sex','Sat'=>'Sáb'];
   $h=adminTitle('Mapa de Reservas','Clique em um dia livre para abrir a janela de pré-reserva. Arraste para selecionar várias diárias. Reservas existentes também abrem em janela sobreposta.');
   $h.='<div class=mapnav><a class=btn href="index.php?p=map&start='.$d0->modify('-15 days')->format('Y-m-d').'">← 15 dias</a><b>'.U::e($start).'</b><a class=btn href="index.php?p=map&start='.$d0->modify('+15 days')->format('Y-m-d').'">15 dias →</a></div>';
   $h.='<div class=map-toolbar><a class=btn href="index.php?p=reservation_new">+ Reserva</a><a class="btn secondary" href="index.php?p=rooms&view=new">+ Unidade</a><a class="btn secondary" href="index.php?p=rooms">Acomodações</a><a class="btn secondary" href="index.php?p=reservations">Reservas</a><a class="btn secondary" href="index.php?p=ai">Automação</a></div>';
   $h.='<p class=map-help><b>Como usar:</b> clique em um dia livre para abrir a pré-reserva ou arraste sobre vários dias da mesma unidade. Depois de criar a pré-reserva, você pode efetivar a reserva ou cancelá-la sem sair do mapa.</p>';
   if(!$rooms)$h.='<div class="alert error">Cadastre e publique pelo menos uma unidade para usar o mapa.</div>';
+  $h.='<style>.calendar .map-night-rate{display:block;font-size:10px;font-weight:650;line-height:1.2;white-space:nowrap;color:#0e685b}.calendar .map-night-rate.is-missing{color:#9c6454;font-weight:400}</style>';
   $h.='<div class=calendar><table><tr><th>Unidade</th>';
   $dates=[];for($i=0;$i<$days;$i++){$d=$d0->modify("+$i days");$dates[]=$d->format('Y-m-d');$h.="<th><small>".$d->format('d/m')."</small><br>".$weekday[$d->format('D')]."</th>";}$h.="</tr>";
   foreach($rooms as $room){
-    $h.='<tr><th><a class="map-room-name" href="index.php?p=rooms&id='.(int)$room['id'].'" title="Editar unidade">'.U::e($room['name']).'</a></th>';
+    $h.='<tr><th><a class="map-room-name" href="index.php?p=rooms&view=edit&id='.(int)$room['id'].'&section=diaria#room-pricing" title="Diárias desta unidade">'.U::e($room['name']).'</a></th>';
     foreach($dates as $date){
       $state='available';$txt='';$title='Disponível';$reservationId=0;$blockId=0;
+      $nightRate=null;
+      foreach($mapRates[(int)$room['id']]??[] as $rate){
+        if($rate['start_date']<=$date&&$date<$rate['end_date']){$nightRate=$rate;break;}
+      }
       foreach($blocks as $b)if((int)$b['room_id']===(int)$room['id']&&$date>=$b['start_date']&&$date<$b['end_date']){$state=$b['type']==='maintenance'?'maintenance':'blocked';$txt=$b['type']==='maintenance'?'M':'B';$title=$b['reason']?:statusPt($state);$blockId=(int)$b['id'];}
       foreach($res as $r)if((int)$r['room_id']===(int)$room['id']&&$date>=$r['checkin']&&$date<$r['checkout']){$state=$r['status'];$txt=mb_substr($r['guest'],0,10);$title=$r['guest'].' — '.statusPt($r['status']);$reservationId=(int)$r['id'];$blockId=0;}
       if($reservationId){
@@ -26,7 +35,9 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
         $content='<a class="map-block-link" href="index.php?p=block_edit&id='.$blockId.'" title="'.U::e($title).' · clique para editar">'.U::e($txt).'</a>';
         $h.='<td class="day '.U::e($state).'" data-room="'.(int)$room['id'].'" data-date="'.U::e($date).'" data-block="'.$blockId.'">'.$content.'</td>';
       }else{
-        $h.='<td class="day available selectable" role="button" tabindex="0" title="Disponível · selecione para cadastrar" data-room="'.(int)$room['id'].'" data-room-name="'.U::e($room['name']).'" data-date="'.U::e($date).'"></td>';
+        $priceLabel=$nightRate!==null?'R$ '.number_format((float)$nightRate['price'],0,',','.'):'Sem diária';
+        $tooltip=$nightRate!==null?'Disponível · '.(string)$nightRate['name'].' · '.money((float)$nightRate['price']):'Disponível · sem tarifa cadastrada em Diárias';
+        $h.='<td class="day available selectable" role="button" tabindex="0" title="'.U::e($tooltip).'" data-room="'.(int)$room['id'].'" data-room-name="'.U::e($room['name']).'" data-date="'.U::e($date).'"><small class="map-night-rate'.($nightRate===null?' is-missing':'').'">'.U::e($priceLabel).'</small></td>';
       }
     }
     $h.='</tr>';
