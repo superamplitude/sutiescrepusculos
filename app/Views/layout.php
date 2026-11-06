@@ -23,7 +23,7 @@
 .table-actions a.btn.secondary.small:hover{background:#218838!important}
 .table-actions .danger.small:hover,
 .table-actions button.danger.small:hover{background:#dc6508!important}
-</style><link rel="stylesheet" href="assets/css/app.css?v=<?=$cssV?>"><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='messages')): ?><link rel="stylesheet" href="assets/css/unified-inbox.css?v=20261106"><?php endif; ?><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='hero')): ?><link rel="stylesheet" href="assets/css/hero-admin.css?v=20261106-center"><?php endif; ?><style>:root{--site-primary:<?=U::e(Site::color('primary_color','#0d756d'))?>;--site-secondary:<?=U::e(Site::color('secondary_color','#173f3b'))?>;--site-accent:<?=U::e(Site::color('accent_color','#bf8d39'))?>;--site-body-font:'<?=U::e(Site::font('body_font','Inter'))?>';--site-heading-font:'<?=U::e(Site::font('heading_font','Georgia'))?>';}</style></head>
+</style><link rel="stylesheet" href="assets/css/app.css?v=<?=$cssV?>"><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='messages')): ?><link rel="stylesheet" href="assets/css/unified-inbox.css?v=20261106"><?php endif; ?><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='hero')): ?><link rel="stylesheet" href="assets/css/hero-admin.css?v=20261106-center"><?php endif; ?><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='rooms')): ?><link rel="stylesheet" href="assets/css/rooms-admin.css?v=20261106a"><?php endif; ?><style>:root{--site-primary:<?=U::e(Site::color('primary_color','#0d756d'))?>;--site-secondary:<?=U::e(Site::color('secondary_color','#173f3b'))?>;--site-accent:<?=U::e(Site::color('accent_color','#bf8d39'))?>;--site-body-font:'<?=U::e(Site::font('body_font','Inter'))?>';--site-heading-font:'<?=U::e(Site::font('heading_font','Georgia'))?>';}</style></head>
 <body class="<?=Auth::user()?'admin-mode':'public-mode '.U::e($siteLayout)?>">
 <?php if(Auth::user()): ?>
 <aside class="admin-sidebar">
@@ -42,8 +42,6 @@
         <a href="index.php?p=property" class="admin-subitem <?=$adminPage==='property'?'active':''?>"><span class="nav-dot"></span><span>Informações do Estabelecimento</span></a>
         <a href="index.php?p=hero" class="<?=$adminPage==='hero'?'active':''?>"><span class="nav-dot"></span><span>Editor do Hero</span></a>
         <a href="index.php?p=rooms" class="<?=$adminPage==='rooms'?'active':''?>"><span class="nav-dot"></span><span>Quartos / Unidades</span></a>
-        <a href="index.php?p=tariffs" class="<?=$adminPage==='tariffs'?'active':''?>"><span class="nav-dot"></span><span>Tarifas</span></a>
-        <a href="index.php?p=promotions" class="<?=$adminPage==='promotions'?'active':''?>"><span class="nav-dot"></span><span>Promoções</span></a>
         <a href="index.php?p=gallery" class="<?=$adminPage==='gallery'?'active':''?>"><span class="nav-dot"></span><span>Galeria</span></a>
         <a href="index.php?p=attractions" class="<?=$adminPage==='attractions'?'active':''?>"><span class="nav-dot"></span><span>Atrações</span></a>
       </div>
