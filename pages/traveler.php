@@ -16,6 +16,15 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   if(!$t){
     $h.="<form method=post class=\"card narrow\">".Csrf::field()."<input type=hidden name=action value=login>".row('E-mail da reserva','email','', 'email').row('Código da reserva','code')."<button>Acessar</button></form>";render('Painel do Viajante',$h);exit;
   }
+  if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='guest_document'){
+    Csrf::check();
+    try{
+      $kind=in_array((string)($_POST['kind']??''),['documento','comprovante'],true)?(string)$_POST['kind']:'documento';
+      (new \App\Services\GuestDocumentService())->storeUpload($_FILES['file']??[],(int)$t['guest_id'],(int)$t['reservation_id'],$kind);
+      U::flash('ok','Documento enviado e associado à reserva.');
+    }catch(Throwable $e){U::flash('err',$e->getMessage());}
+    U::redirect('index.php?p=traveler');
+  }
   if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='message'){
     Csrf::check();$body=trim($_POST['body']??'');if($body!==''){
       $q=$pdo->prepare("SELECT id FROM conversations WHERE reservation_id=? AND guest_id=? AND status='open' ORDER BY id DESC LIMIT 1");$q->execute([$t['reservation_id'],$t['guest_id']]);$cid=$q->fetchColumn();
@@ -60,5 +69,9 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   $h.='<section class=card><h3>Favoritos</h3><form method=post>'.Csrf::field().'<input type=hidden name=action value=favorite><input type=hidden name=room_id value="'.$r['room_id'].'"><button class=secondary>'.($isFav?'Remover esta acomodação dos favoritos':'Salvar esta acomodação nos favoritos').'</button></form>';if($favs){$h.='<div class=chips>';foreach($favs as $fv)$h.='<span>'.U::e($fv['name']).'</span>';$h.='</div>';}$h.='</section>';
   $mq=$pdo->prepare("SELECT m.* FROM messages m JOIN conversations c ON c.id=m.conversation_id WHERE c.reservation_id=? AND c.guest_id=? ORDER BY m.id");$mq->execute([$t['reservation_id'],$t['guest_id']]);$travMsgs=$mq->fetchAll();
   $h.='<section class=card><h3>Mensagens</h3><div class=conversation>';if(!$travMsgs)$h.='<p class=muted>Nenhuma mensagem ainda.</p>';foreach($travMsgs as $m)$h.='<div class="bubble '.U::e($m['sender_type']).'"><small>'.U::e($m['sender_type']==='guest'?'Você':'Pousada').'</small><p>'.nl2br(U::e($m['body'])).'</p><time>'.U::e($m['created_at']).'</time></div>';$h.='</div><form method=post>'.Csrf::field().'<input type=hidden name=action value=message>'.row('Nova mensagem','body','', 'textarea').'<button>Enviar mensagem</button></form></section>';
+  $documents=(new \App\Services\GuestDocumentService())->listFor((int)$t['guest_id'],(int)$t['reservation_id']);
+  $h.='<section class="card"><h3>Documentos e comprovantes</h3><p class="muted">Arquivos privados vinculados à reserva; PDF, JPG, PNG ou WEBP até 5 MB.</p>'
+     .\App\Services\GuestDocumentService::links($documents)
+     .'<form method="post" enctype="multipart/form-data">'.Csrf::field().'<input type="hidden" name="action" value="guest_document"><div class="grid2"><label>Tipo<select name="kind"><option value="documento">Documento</option><option value="comprovante">Comprovante</option></select></label><label>Arquivo<input name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" required></label></div><button>Enviar documento</button></form></section>';
   if($r['status']==='concluida')$h.='<form method=post class=card>'.Csrf::field().'<input type=hidden name=action value=review><label>Nota<select name=rating><option value=5>5 - Excelente</option><option value=4>4 - Muito bom</option><option value=3>3 - Bom</option><option value=2>2 - Regular</option><option value=1>1 - Ruim</option></select></label>'.row('Comentário','comment','', 'textarea').'<button>Enviar avaliação</button></form>';
   render('Painel do Viajante',$h);exit;

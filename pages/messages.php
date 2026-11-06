@@ -25,18 +25,29 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
       Audit::log('message.reply','conversation',$cid,['ai_paused'=>true]);U::redirect('index.php?p=messages&id='.$cid);
     }
   }
-  $xs=$pdo->query("SELECT c.*,g.name guest,g.email guest_email,g.whatsapp guest_whatsapp,r.code FROM conversations c LEFT JOIN guests g ON g.id=c.guest_id LEFT JOIN reservations r ON r.id=c.reservation_id ORDER BY c.status='open' DESC,c.updated_at DESC")->fetchAll();
-  $h=adminTitle('Atendimento','Conversas do site, hóspedes e reservas em uma única fila.').'<div class=split><div class=card><table><tr><th>Cliente</th><th>Contato</th><th>Reserva</th><th>Canal</th><th>Modo</th><th>Status</th><th></th></tr>';
+  $channel=(string)($_GET['channel']??'all');
+  if(!in_array($channel,['all','site','whatsapp','phone','other'],true))$channel='all';
+  $search=trim((string)($_GET['search']??''));
+  $q=$pdo->prepare("SELECT c.*,g.name guest,g.email guest_email,g.whatsapp guest_whatsapp,r.code FROM conversations c LEFT JOIN guests g ON g.id=c.guest_id LEFT JOIN reservations r ON r.id=c.reservation_id WHERE (?='all' OR (?='other' AND c.channel NOT IN('site','whatsapp','phone')) OR c.channel=?) AND (?='' OR g.name LIKE ? OR g.whatsapp LIKE ? OR r.code LIKE ?) ORDER BY c.status='open' DESC,c.updated_at DESC LIMIT 400");
+  $like='%'.$search.'%';$q->execute([$channel,$channel,$channel,$search,$like,$like,$like]);$xs=$q->fetchAll();
+  $h=adminTitle('Central de Atendimento','Conversas do site, hóspedes e canais integrados em uma única fila.');
+  $h.='<section class="card"><form method="get" class="map-editor-actions"><input type="hidden" name="p" value="messages"><label>Canal<select name="channel"><option value="all" '.($channel==='all'?'selected':'').'>Todos</option><option value="site" '.($channel==='site'?'selected':'').'>Site / Hóspedes</option><option value="whatsapp" '.($channel==='whatsapp'?'selected':'').'>WhatsApp</option><option value="phone" '.($channel==='phone'?'selected':'').'>Telefone</option><option value="other" '.($channel==='other'?'selected':'').'>Outras integrações</option></select></label><label>Localizar conversa<input type="search" name="search" value="'.U::e($search).'" placeholder="Nome, WhatsApp ou reserva"></label><button>Filtrar</button><a class="btn secondary" href="index.php?p=whatsapp_rnl">WhatsApp</a><a class="btn secondary" href="index.php?p=integrations">Integrações</a></form><p class="muted">Os canais aparecem quando suas mensagens entram na fila de conversas existente.</p></section>';
+  $h.='<div class=split><div class=card><div class="table-scroll"><table><tr><th>Cliente</th><th>Contato</th><th>Reserva</th><th>Canal</th><th>Modo</th><th>Status</th><th></th></tr>';
   foreach($xs as $x){
     $contact=trim(($x['guest_whatsapp']??'').' '.($x['guest_email']??''));
     $modeLabel=['human'=>'Humano','hybrid'=>'Híbrido','ai'=>'IA'][$x['mode']??'hybrid']??'Híbrido';
     $h.='<tr><td>'.U::e($x['guest']?:'Visitante').'</td><td>'.U::e($contact?:'—').'</td><td>'.U::e($x['code']?:'—').'</td><td>'.U::e($x['channel']).'</td><td><span class="status-badge">'.U::e($modeLabel).'</span></td><td>'.U::e($x['status']==='open'?'Aberto':'Encerrado').'</td><td><a href="index.php?p=messages&id='.$x['id'].'">Abrir</a></td></tr>';
   }
-  $h.='</table></div>';
+  $h.='</table></div></div>';
   if($cid){
     $q=$pdo->prepare("SELECT m.*,c.mode,c.status,g.name guest,g.email guest_email,g.whatsapp guest_whatsapp,r.code FROM messages m JOIN conversations c ON c.id=m.conversation_id LEFT JOIN guests g ON g.id=c.guest_id LEFT JOIN reservations r ON r.id=c.reservation_id WHERE m.conversation_id=? ORDER BY m.id");
     $q->execute([$cid]);$msgs=$q->fetchAll();
     $h.='<div class=card><h2>Conversa</h2>';
+    $q=$pdo->prepare('SELECT c.guest_id,c.reservation_id,g.name FROM conversations c LEFT JOIN guests g ON g.id=c.guest_id WHERE c.id=?');$q->execute([$cid]);$linked=$q->fetch();
+    if($linked){
+      $docs=(new \App\Services\GuestDocumentService())->listFor((int)$linked['guest_id'],$linked['reservation_id']!==null?(int)$linked['reservation_id']:null);
+      $h.='<section class="guest-conversation-docs"><h3>Arquivos do cliente</h3>'.\App\Services\GuestDocumentService::links($docs).'<p><a href="index.php?p=guests&id='.(int)$linked['guest_id'].'">Ficha do hóspede</a></p></section>';
+    }
     if($msgs){
       $first=$msgs[0];$currentMode=(string)($first['mode']??'hybrid');
       $h.='<p class=muted>'.U::e($first['guest']?:'Visitante').' · '.U::e(trim(($first['guest_whatsapp']??'').' '.($first['guest_email']??''))).'</p>';
