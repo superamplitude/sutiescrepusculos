@@ -43,3 +43,88 @@
 .room-jump-nav a:hover{background:#d9eee4}
 .room-name-link:focus-visible,.room-photo-link:focus-visible,.room-jump-nav a:focus-visible{outline:3px solid #0d8375;outline-offset:2px}
 .rooms-pricing-card{scroll-margin-top:105px}
+
+/* Compact unit editor: only the Rooms / Unidades screen. */
+.rooms-list-table .room-price-current small{display:block;font-size:10px;color:#6c7c73;margin-top:4px}
+.admin-mode .room-actions-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin:0 0 18px;min-width:0}
+.admin-mode .room-actions-toolbar>form{margin:0;display:flex;align-items:center}
+.admin-mode .room-actions-toolbar .btn,
+.admin-mode .room-actions-toolbar button,
+.admin-mode .room-jump-nav a,
+.admin-mode .rooms-list-actions .btn,
+.admin-mode .rooms-list-table .room-price-actions a,
+.admin-mode .rooms-list-table .table-actions a.btn.secondary.small,
+.admin-mode .rooms-list-table .table-actions button.danger.small,
+.admin-mode .rooms-pricing-form button,
+.admin-mode .rooms-pricing-table button,
+.admin-mode .room-base-price-form button,
+.admin-mode .room-inline-price-form button,
+.admin-mode .room-admin-dialog .form-actions button,
+.admin-mode .room-admin-dialog .room-dialog-actions button{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  background:#ed7a1e!important;border:1px solid #c96009!important;color:#fff!important;
+  border-radius:8px!important;padding:8px 15px!important;min-height:37px!important;min-width:0;
+  font-weight:700!important;text-decoration:none!important;font-size:12px!important;line-height:1.2!important;
+  cursor:pointer;
+}
+.admin-mode .room-actions-toolbar .btn:hover,
+.admin-mode .room-actions-toolbar button:hover,
+.admin-mode .room-jump-nav a:hover,
+.admin-mode .rooms-list-table .room-price-actions a:hover,
+.admin-mode .room-admin-dialog .room-dialog-actions button:hover,
+.admin-mode .rooms-pricing-form button:hover,
+.admin-mode .room-base-price-form button:hover{background:#cb600c!important}
+.admin-mode .room-actions-toolbar .room-section-button{min-height:44px!important;font-size:15px!important;padding:10px 19px!important}
+.admin-mode .room-actions-toolbar .room-section-button.is-active{background:#ac4e06!important;box-shadow:0 0 0 2px #f5ad69}
+.admin-mode .room-actions-toolbar .room-toolbar-back{background:#fff2e8!important;border-color:#eb9e62!important;color:#8e450c!important}
+.admin-mode .room-actions-toolbar .room-toolbar-back:hover{background:#ffe4cb!important}
+.admin-mode .room-actions-toolbar .room-delete-button{background:#c95712!important}
+.admin-mode .room-unit-summary{padding:20px 22px}
+.admin-mode .room-unit-summary h2{margin:0 0 12px;font-size:19px}
+.admin-mode .room-unit-summary p{margin:5px 0}
+.admin-mode dialog.room-admin-dialog{
+  box-sizing:border-box;position:fixed;inset:auto;top:50%;left:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);
+  width:min(660px,calc(100vw - 28px));max-width:660px;max-height:min(84dvh,770px);
+  margin:0;padding:15px 18px 18px;border:1px solid #8faaa2;border-radius:13px;
+  overflow-y:auto;overscroll-behavior:contain;background:#fff;color:#213c34;box-shadow:0 22px 60px #09261a66;
+}
+.admin-mode dialog.room-admin-dialog:not([open]){display:none!important}
+.admin-mode dialog.room-admin-dialog::backdrop{background:#0b1e19aa}
+.admin-mode .room-dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;border-bottom:1px solid #e2ebe6;padding:0 0 12px;margin-bottom:12px}
+.admin-mode .room-dialog-head h2{font-size:17px;margin:4px 0;line-height:1.35}
+.admin-mode .room-dialog-head [data-room-close]{min-height:32px;min-width:32px;padding:0!important;font-size:23px;border:1px solid #e6be9b;background:#fff3e9;color:#a54e0d;border-radius:8px;cursor:pointer}
+.admin-mode .room-edit-form{padding:0!important;margin:0!important;border:0!important;box-shadow:none!important;min-width:0}
+.admin-mode .room-edit-form .grid2,.admin-mode .room-photo-dialog .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.admin-mode .room-edit-form label,.admin-mode .room-photo-dialog label{min-width:0}
+.admin-mode .room-edit-form input,.admin-mode .room-edit-form textarea,.admin-mode .room-edit-form select,
+.admin-mode .room-photo-dialog input,.admin-mode .room-photo-dialog textarea{min-width:0;max-width:100%;box-sizing:border-box}
+.admin-mode .room-status-switch{margin:0;padding:0;border:0;min-width:0}
+.admin-mode .room-status-switch legend{font-size:12px;font-weight:650;margin-bottom:6px}
+.admin-mode .room-status-options{display:flex;gap:5px;flex-wrap:wrap}
+.admin-mode .room-status-options label{position:relative;display:block;flex:1;min-width:62px;cursor:pointer}
+.admin-mode .room-status-options input{position:absolute;opacity:0;width:1px;height:1px}
+.admin-mode .room-status-options span{display:block;border:1px solid #b6c8c1;background:#f7faf8;border-radius:7px;padding:11px 8px;text-align:center;font-size:11px;font-weight:700;color:#52675e}
+.admin-mode .room-status-options input:checked+span{border-color:#c56416;background:#ed7a1e;color:white}
+.admin-mode .room-status-options input:focus-visible+span{outline:3px solid #b76b2e;outline-offset:2px}
+.admin-mode .room-edit-form .toggle-control input:checked+.toggle-slider{background:#ed7a1e}
+.admin-mode .room-edit-form .form-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-wrap:wrap}
+.admin-mode .room-photo-dialog .room-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin:12px 0}
+.admin-mode .room-current-media{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;border-top:1px solid #e7eee9;padding-top:12px}
+.admin-mode .room-current-media h3{grid-column:1/-1;font-size:13px;margin:0 0 2px}
+.admin-mode .room-current-media figure{min-width:0;margin:0;border:1px solid #dbe7df;border-radius:8px;overflow:hidden;background:#f8fbf8}
+.admin-mode .room-current-media img{width:100%;height:94px;object-fit:cover;display:block}
+.admin-mode .room-current-media figcaption{padding:4px 6px;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.admin-mode .room-base-price-form{display:flex;align-items:end;gap:10px;flex-wrap:wrap;padding:12px;border:1px solid #efd0b9;border-radius:9px;background:#fff7ee;margin:12px 0}
+.admin-mode .room-base-price-form label{flex:1;min-width:170px}
+.admin-mode .room-base-price-form input{width:100%}
+.admin-mode .room-inline-price-form{display:flex;align-items:center;gap:6px;margin:0}
+.admin-mode .room-inline-price-form input{width:95px;min-width:70px;margin:0}
+.admin-mode .room-inline-price-form button{font-size:10px!important;min-height:30px!important;padding:6px 9px!important}
+.admin-mode .room-pricing-table th:nth-child(3){min-width:155px}
+.admin-mode .room-pricing-table td{vertical-align:middle}
+@media(max-width:690px){
+ .admin-mode dialog.room-admin-dialog{width:calc(100vw - 20px);max-height:calc(100dvh - 25px);padding:12px}
+ .admin-mode .room-edit-form .grid2,.admin-mode .room-photo-dialog .grid2{grid-template-columns:1fr}
+ .admin-mode .room-current-media{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .admin-mode .room-actions-toolbar .room-section-button{min-height:41px!important;flex:1}
+}
