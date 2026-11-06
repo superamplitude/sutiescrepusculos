@@ -6,6 +6,8 @@ const browser=await chromium.launch({headless:true,args:['--no-proxy-server']});
 try{
 const page=await browser.newPage(),errors=[];
 page.on('pageerror',e=>errors.push(e.message));
+await page.route('https://suites-chat.test/',route=>route.fulfill({contentType:'text/html',body:'<!doctype html><html><body></body></html>'}));
+await page.goto('https://suites-chat.test/');
 await page.setContent('<button id="suitesVoiceToggle"></button><section id="suitesPanelVoice" data-greeting="regression" hidden><input name="_csrf" value="fixture"><p data-voice-status></p><div data-voice-answer></div><textarea></textarea><button data-voice-close></button><button data-voice-send>Enviar</button><button data-voice-repeat></button><button data-voice-stop></button><button data-voice-test></button><button data-voice-mic></button></section>');
 await page.evaluate(()=>{
  window.__requests=[];window.__pending=[];window.__audioPlays=0;
