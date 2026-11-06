@@ -7,7 +7,8 @@ const browser=await chromium.launch({headless:true,args:['--no-proxy-server']});
 try{
  const page=await browser.newPage({viewport:{width:1208,height:730}}),errors=[];
  page.on('pageerror',e=>errors.push(e.message));
- await page.goto('about:blank');
+ await page.route('https://suites-panel-qa.test/',route=>route.fulfill({status:200,contentType:'text/html',body:'<!doctype html><html><body></body></html>'}));
+ await page.goto('https://suites-panel-qa.test/');
  const fixture='<style>'+css+'</style><button id="suitesVoiceToggle" class="suites-voice-toggle">Falar com IA</button>'
  +'<section id="suitesPanelVoice" class="suites-voice-panel" data-greeting="qa-recepcao" hidden>'
  +'<header><span class="suites-voice-avatar">✦</span><span class="suites-voice-head-copy"><strong>Assistente IA</strong><small>Atendimento por chat e voz</small></span><button data-voice-close>×</button></header>'
