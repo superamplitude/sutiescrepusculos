@@ -495,5 +495,26 @@
     "methods": [
       "GET"
     ]
+  },
+  "gallery_media_add": {
+    "file": "gallery_media_add.php",
+    "access": "admin",
+    "methods": [
+      "POST"
+    ]
+  },
+  "gallery_media_update": {
+    "file": "gallery_media_update.php",
+    "access": "admin",
+    "methods": [
+      "POST"
+    ]
+  },
+  "reservation_status": {
+    "file": "reservation_status.php",
+    "access": "admin",
+    "methods": [
+      "POST"
+    ]
   }
 }
