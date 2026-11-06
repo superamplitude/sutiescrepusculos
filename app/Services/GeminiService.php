@@ -15,7 +15,8 @@ final class GeminiService{
     $ctx=$this->knowledge();
     $agent=trim((string)Site::get('chat_agent_name','Assistente IA'))?:'Assistente IA';
     $central=trim((string)($c['system_instruction']??''));
-    $rules="Você é {$agent}, agente virtual de atendimento de uma pousada. Use SOMENTE informações confirmadas na base fornecida. Não invente disponibilidade, preço, política, serviço ou condição. Se a base não trouxer a resposta, diga que precisa confirmar com a equipe humana.";
+    $property=BusinessContextService::property();
+    $rules="Você é {$agent}, assistente de atendimento.\n".BusinessContextService::instructions($property);
     if($central!=='')$rules.="\nINSTRUÇÃO DO SUPER ADMIN:\n".$central;
     $payload=['contents'=>[['parts'=>[['text'=>$rules."\n\nBASE CONFIRMADA:\n".$ctx."\n\nPERGUNTA DO CLIENTE:\n".$q]]]]];
     $ch=curl_init("https://generativelanguage.googleapis.com/v1beta/models/".rawurlencode($model).":generateContent?key=".rawurlencode($apiKey));
@@ -28,10 +29,12 @@ final class GeminiService{
   }
   private function knowledge():string{
     $pdo=DB::pdo();$parts=[];
-    $p=$pdo->query("SELECT name,short_description,description,history,concept,city,state,address,phone,whatsapp,email,checkin,checkout,cancellation_policy,house_rules FROM property WHERE id=1")->fetch();
-    if($p)$parts[]="POUSADA: ".json_encode($p,JSON_UNESCAPED_UNICODE);
-    $rooms=$pdo->query("SELECT name,type,description,capacity,base_price,view_name,bathroom_type FROM rooms WHERE active=1")->fetchAll();
-    $parts[]="QUARTOS: ".json_encode($rooms,JSON_UNESCAPED_UNICODE);
+    $p=BusinessContextService::property();
+    if($p)$parts[]="ESTABELECIMENTO: ".json_encode($p,JSON_UNESCAPED_UNICODE);
+    if(BusinessContextService::isLodging($p)){
+      $rooms=$pdo->query("SELECT name,type,description,capacity,base_price,view_name,bathroom_type FROM rooms WHERE active=1")->fetchAll();
+      $parts[]="ACOMODAÇÕES CADASTRADAS (não comprovam disponibilidade): ".json_encode($rooms,JSON_UNESCAPED_UNICODE);
+    }
     $kb=$pdo->query("SELECT title,content FROM knowledge_base WHERE active=1 ORDER BY id DESC LIMIT 50")->fetchAll();
     $parts[]="FAQ/BASE: ".json_encode($kb,JSON_UNESCAPED_UNICODE);
     return implode("\n",$parts);
@@ -39,6 +42,6 @@ final class GeminiService{
   private function fallback(string $q):string{
     $pdo=DB::pdo();$s=$pdo->prepare("SELECT content FROM knowledge_base WHERE active=1 AND (title LIKE ? OR content LIKE ?) ORDER BY id DESC LIMIT 1");
     $like='%'.trim($q).'%';$s->execute([$like,$like]);$x=$s->fetchColumn();
-    return $x?:'Não encontrei essa informação na base cadastrada. Vou precisar que a pousada confirme.';
+    return $x?:'Não encontrei essa informação na base cadastrada. Um membro da nossa equipe poderá confirmar.';
   }
 }
