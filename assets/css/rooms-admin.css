@@ -156,3 +156,39 @@
   outline:3px solid #ac540c;outline-offset:3px;
 }
 .admin-mode .room-actions-toolbar a[data-room-open]{cursor:pointer}
+
+
+/* Comodidades: independent Liga/Desliga controls; preserve native form checkboxes. */
+.admin-mode .room-edit-form .room-amenities{display:flex;flex-direction:column;gap:15px;min-width:0;margin:10px 0 18px}
+.admin-mode .room-edit-form .room-amenities-group{min-width:0}
+.admin-mode .room-edit-form .room-amenities-group h4{font-size:13px;line-height:1.35;margin:0 0 8px;color:#2c5148;font-weight:700}
+.admin-mode .room-edit-form .room-amenities-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.admin-mode .room-edit-form label.room-amenity-toggle{
+  display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:7px;
+  min-width:0;margin:0;padding:7px 9px;min-height:41px;box-sizing:border-box;
+  border:1px solid #d5e2db;border-radius:8px;background:#fbfcfb;cursor:pointer;
+}
+.admin-mode .room-edit-form label.room-amenity-toggle:hover{border-color:#edbb90;background:#fff9f2}
+.admin-mode .room-edit-form .room-amenity-name{flex:1;min-width:0;font-size:11px;line-height:1.35;color:#283f38;overflow-wrap:anywhere}
+.admin-mode .room-edit-form .room-amenity-control{position:relative;display:inline-flex;align-items:center;gap:5px;flex:0 0 auto}
+.admin-mode .room-edit-form .room-amenity-control input[type="checkbox"]{
+  position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;
+  margin:0!important;padding:0!important;overflow:hidden!important;pointer-events:none!important;
+}
+.admin-mode .room-edit-form .room-amenity-switch{
+  display:inline-block;position:relative;box-sizing:border-box;width:32px;height:19px;
+  border-radius:20px;background:#b8c3bf;border:1px solid #aabcb4;transition:background .14s ease;
+}
+.admin-mode .room-edit-form .room-amenity-switch::after{
+  content:"";display:block;position:absolute;top:2px;left:2px;width:13px;height:13px;
+  border-radius:50%;background:#fff;box-shadow:0 1px 2px #0003;transition:transform .14s ease;
+}
+.admin-mode .room-edit-form .room-amenity-state{min-width:42px;font-size:10px;font-weight:700;text-align:right;color:#6b7e75}
+.admin-mode .room-edit-form .room-amenity-state::after{content:"Desligado"}
+.admin-mode .room-edit-form .room-amenity-control input[type="checkbox"]:checked+.room-amenity-switch{background:#ed7a1e;border-color:#d86810}
+.admin-mode .room-edit-form .room-amenity-control input[type="checkbox"]:checked+.room-amenity-switch::after{transform:translateX(13px)}
+.admin-mode .room-edit-form .room-amenity-control input[type="checkbox"]:checked~.room-amenity-state{color:#a95110}
+.admin-mode .room-edit-form .room-amenity-control input[type="checkbox"]:checked~.room-amenity-state::after{content:"Ligado"}
+.admin-mode .room-edit-form .room-amenity-control input[type="checkbox"]:focus-visible+.room-amenity-switch{outline:3px solid #ac540c;outline-offset:3px}
+@media(max-width:580px){.admin-mode .room-edit-form .room-amenities-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.admin-mode .room-edit-form .room-amenity-switch,.admin-mode .room-edit-form .room-amenity-switch::after{transition:none}}
