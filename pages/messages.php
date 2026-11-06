@@ -70,7 +70,7 @@ $channels=['site'=>'Site','whatsapp'=>'WhatsApp','phone'=>'Telefone'];
 $modeNames=['human'=>'Humano','hybrid'=>'Híbrido','ai'=>'IA'];
 $escape=fn($v)=>U::e((string)$v);
 $linkContext='&channel='.rawurlencode($channel).'&search='.rawurlencode($search);
-$h=adminTitle('Central de Atendimento','Converse e acompanhe o atendimento dos canais conectados em uma única central.');
+$h='';
 $h.='<div class="unified-inbox" data-unified-inbox>';
 $h.='<aside class="inbox-sidebar" aria-label="Lista de conversas">';
 $h.='<div class="inbox-list-head"><div><h2>Conversas</h2><span>'.count($threads).' encontradas</span></div><a href="index.php?p=messages" class="inbox-refresh" aria-label="Atualizar conversas" title="Atualizar">↻</a></div>';

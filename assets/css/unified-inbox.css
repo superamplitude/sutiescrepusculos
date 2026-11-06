@@ -1,5 +1,5 @@
 /* Unified inbox — scoped to the Atendimento page only */
-.unified-inbox{display:grid;grid-template-columns:minmax(285px,34%) minmax(0,1fr);gap:14px;min-width:0;height:clamp(510px,calc(100dvh - 210px),890px);align-items:stretch;color:#253c39}
+.unified-inbox{display:grid;grid-template-columns:minmax(285px,34%) minmax(0,1fr);gap:14px;min-width:0;height:calc(100dvh - 113px);min-height:640px;align-items:stretch;color:#253c39}
 .unified-inbox *{box-sizing:border-box}
 .unified-inbox .inbox-sidebar,.unified-inbox .inbox-detail{min-width:0;min-height:0;background:#fff;border:1px solid #bccdca;border-radius:13px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 2px 12px #0b332510}
 .unified-inbox .inbox-list-head{display:flex;justify-content:space-between;align-items:center;padding:15px 16px 11px;border-bottom:1px solid #e8eeec;flex:none;gap:8px}
@@ -60,3 +60,6 @@
 @media(max-width:1020px){.unified-inbox{grid-template-columns:minmax(245px,36%) minmax(0,1fr)}.unified-inbox .inbox-search{grid-template-columns:minmax(0,1fr) 92px}.unified-inbox .inbox-search button{grid-column:1/-1}}
 @media(max-width:720px){.unified-inbox{height:auto;display:flex;flex-direction:column}.unified-inbox .inbox-sidebar{height:280px;flex:none}.unified-inbox .inbox-detail{height:min(690px,calc(100dvh - 130px));flex:none}.unified-inbox .inbox-search{grid-template-columns:minmax(0,1fr) 112px 64px}.unified-inbox .inbox-search button{grid-column:auto}}
 @media(max-width:480px){.unified-inbox .inbox-detail-head{padding:10px;flex-wrap:wrap}.unified-inbox .inbox-info{padding:8px 10px}.unified-inbox .inbox-message-scroll{padding:12px}.unified-inbox .inbox-compose-footer{align-items:stretch;flex-direction:column}.unified-inbox .inbox-compose-footer button{width:100%}.unified-inbox .inbox-search{grid-template-columns:1fr 100px}.unified-inbox .inbox-search button{grid-column:1/-1}}
+
+/* Full-height inbox: leave room only for the fixed navigation and modest padding. */
+@media(max-width:720px){.unified-inbox{height:auto;min-height:0}}
