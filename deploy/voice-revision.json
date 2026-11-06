@@ -1,6 +1,6 @@
 {
-  "revision": 1,
+  "revision": 2,
   "profile": "suites-conversational-v1",
-  "scope": "voice",
-  "reason": "Persist conversational style independently from pages; preserve identity and complete sentences."
+  "scope": "voice-and-attendance",
+  "reason": "Business-specific conversation prompts; synthetic voice identity and engine unchanged."
 }
