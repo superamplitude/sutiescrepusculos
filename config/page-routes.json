@@ -516,5 +516,13 @@
     "methods": [
       "POST"
     ]
+  },
+  "room_manage": {
+    "file": "room_manage.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
   }
 }
