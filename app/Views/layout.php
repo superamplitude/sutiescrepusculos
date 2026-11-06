@@ -116,7 +116,7 @@
       <small><?=Auth::isSuperAdmin()?'Controle total da empresa':'Gestão da empresa'?></small>
     </div>
     <div class="admin-topbar-actions">
-      <button type="button" id="suitesVoiceToggle" class="suites-voice-toggle" aria-expanded="false" aria-controls="suitesPanelVoice">Chat e voz</button>
+      
       <a href="index.php" target="_blank" class="admin-view-site">Ver portal</a>
       <div class="admin-user">
         <span class="admin-user-avatar"><?=strtoupper(substr(Auth::user()['name']??'A',0,1))?></span>
@@ -210,15 +210,17 @@
 </div>
 <?php endif;?>
 <?php if(!Auth::user() && !empty($siteSettings['custom_css'])):?><style><?=str_replace('</style','<\/style',(string)$siteSettings['custom_css'])?></style><?php endif;?><?php $jsV=@filemtime(__DIR__.'/../../assets/js/app.js')?:time(); ?><script src="assets/js/app.js?v=<?=$jsV?>"></script><?php if(Auth::user()): if(empty($_SESSION['_panel_voice_greeting']))$_SESSION['_panel_voice_greeting']=bin2hex(random_bytes(8)); ?>
-<link rel="stylesheet" href="assets/css/panel-voice.css?v=20261105">
+<link rel="stylesheet" href="assets/css/panel-voice.css?v=20261106b">
+<button type="button" id="suitesVoiceToggle" class="suites-voice-toggle" aria-expanded="false" aria-controls="suitesPanelVoice">💬 Falar com IA</button>
 <section id="suitesPanelVoice" class="suites-voice-panel" data-greeting="<?=U::e($_SESSION['_panel_voice_greeting'])?>" hidden aria-label="Chat e voz">
   <header><strong>Chat e voz</strong><button type="button" data-voice-close aria-label="Fechar assistente">×</button></header>
   <?=\App\Core\Csrf::field()?>
   <p class="suites-voice-status" data-voice-status role="status" aria-live="polite">Consultando voz…</p>
-  <div class="suites-voice-answer" data-voice-answer aria-live="polite"></div>
+  <div class="suites-voice-answer" data-voice-answer role="log" aria-live="polite"></div>
+  <div class="suites-voice-confirm" data-agent-confirm-box hidden><b>Confirmação necessária</b><p data-agent-confirm-text></p><button type="button" data-agent-confirm>Confirmar alteração</button> <button type="button" data-agent-cancel>Cancelar</button></div>
   <label>Mensagem<textarea maxlength="550" placeholder="Fale ou escreva sua pergunta"></textarea></label>
   <div class="suites-voice-actions"><button type="button" data-voice-send>Enviar</button><button type="button" data-voice-mic>Microfone</button><button type="button" data-voice-repeat>Repetir</button><button type="button" data-voice-stop>Parar</button><button type="button" data-voice-test>Testar voz</button></div>
 </section>
-<script defer src="assets/js/panel-voice.js?v=20261106"></script>
+<script defer src="assets/js/panel-voice.js?v=20261106b"></script>
 <?php endif;?>
 </body></html>
