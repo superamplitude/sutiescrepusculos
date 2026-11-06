@@ -20,6 +20,24 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
     }
     Audit::log('media.create','media',$mediaId);U::redirect('index.php?p=gallery');
   }
-  $ms=$pdo->query("SELECT m.*,r.name room_name FROM media m LEFT JOIN rooms r ON m.scope='room' AND r.id=m.entity_id ORDER BY m.sort_order,m.id DESC")->fetchAll();$roomsForMedia=$pdo->query("SELECT id,name FROM rooms ORDER BY name")->fetchAll();$h=adminTitle('Galeria','Envie fotos ou vídeos diretamente. Para fotos de atrações, use o módulo Atrações.').'<form method=post enctype="multipart/form-data" class=card>'.Csrf::field().'<div class=grid3><label>Onde usar<select name=scope id=mediaScope><option value=property>Pousada</option><option value=room>Quarto</option></select></label><label>Quarto<select name=room_id id=mediaRoom><option value="">Selecione quando for mídia de quarto</option>';foreach($roomsForMedia as $rr)$h.='<option value="'.$rr['id'].'">'.U::e($rr['name']).'</option>';$h.='</select></label><label>Tipo<select name=type><option value=image>Foto</option><option value=video>Vídeo</option></select></label><label>Upload<input type=file name=media_file accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"></label>'.row('Ou URL externa','url').row('Legenda','caption').row('Texto alternativo','alt_text').row('Ordem','sort_order',0,'number').'</div>'.row('Marcar como capa','is_cover',0,'checkbox').'<button>Adicionar mídia</button></form><div class=gallery>';
+  $ms=$pdo->query("SELECT m.*,r.name room_name FROM media m LEFT JOIN rooms r ON m.scope='room' AND r.id=m.entity_id ORDER BY m.sort_order,m.id DESC")->fetchAll();
+  $roomsForMedia=$pdo->query("SELECT id,name FROM rooms ORDER BY name")->fetchAll();
+  $openForm=(($_GET['form']??'')==='add');
+  $h='<div class="gallery-toolbar"><a class="btn" href="index.php?p=gallery&form=add" data-gallery-open="galleryAddDialog">+ Adicionar mídia</a></div>';
+  $h.='<dialog id="galleryAddDialog" class="gallery-admin-dialog" aria-labelledby="galleryAddTitle"'.($openForm?' open data-gallery-auto="1"':'').'>'
+    .'<div class="gallery-dialog-heading"><div><h2 id="galleryAddTitle">Adicionar mídia</h2><p>Fotos e vídeos para a pousada ou unidades.</p></div>'
+    .'<a href="index.php?p=gallery" data-gallery-close aria-label="Fechar janela">×</a></div>'
+    .'<form method="post" enctype="multipart/form-data" class="gallery-dialog-form">'.Csrf::field()
+    .'<div class="gallery-form-grid"><label>Onde usar<select name="scope" id="mediaScope"><option value="property">Pousada</option><option value="room">Quarto</option></select></label>'
+    .'<label>Quarto<select name="room_id" id="mediaRoom"><option value="">Selecione quando for mídia de quarto</option>';
+  foreach($roomsForMedia as $rr)$h.='<option value="'.(int)$rr['id'].'">'.U::e($rr['name']).'</option>';
+  $h.='</select></label><label>Tipo<select name="type"><option value="image">Foto</option><option value="video">Vídeo</option></select></label>'
+    .'<label>Upload<input type="file" name="media_file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"></label>'
+    .row('Ou URL externa','url').row('Legenda','caption').row('Texto alternativo','alt_text')
+    .row('Ordem','sort_order',0,'number').'</div>'
+    .row('Marcar como capa','is_cover',0,'checkbox')
+    .'<div class="gallery-dialog-actions"><a href="index.php?p=gallery" class="btn secondary" data-gallery-close>Cancelar</a><button type="submit">Adicionar mídia</button></div>'
+    .'</form></dialog><div class="gallery">';
   foreach($ms as $m){$src=$m['file_path']?:$m['url'];if(!$src)continue;$h.='<figure>';if($m['type']==='video')$h.='<video controls src="'.U::e(safeUrl($src)).'"></video>';else $h.='<img src="'.U::e(safeUrl($src)).'" alt="'.U::e($m['alt_text']).'">';$h.='<figcaption><small>'.U::e($m['scope']==='room'?('Quarto: '.($m['room_name']??'')):'Pousada').'</small><br>'.U::e($m['caption']).'<form method=post action="index.php?p=media_delete" onsubmit="return confirm(\'Remover esta mídia?\')">'.Csrf::field().'<input type=hidden name=id value="'.$m['id'].'"><input type=hidden name=return_to value=gallery><button class="danger small">Remover</button></form></figcaption></figure>';}
-  render('Galeria',$h.'</div>');exit;
+  $h.='</div><script defer src="assets/js/gallery-admin.js?v=20261106a"></script>';
+  render('Galeria',$h);exit;
