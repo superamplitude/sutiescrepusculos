@@ -30,7 +30,7 @@ for name,digest in files.items():
  data=urllib.request.urlopen('https://raw.githubusercontent.com/superamplitude/sutiescrepusculos/'+ref+'/'+name,timeout=20).read()
  assert hashlib.sha256(data).hexdigest()==digest,'Source integrity '+name
  payload[name]=data
- subprocess.run(['php','-l'] if name.endswith('.php') else ['node','--check'],input=data,check=True,capture_output=True)
+ subprocess.run(['php','-l'] if name.endswith('.php') else ['node','--input-type=module','--check'],input=data,check=True,capture_output=True)
 before={'app/Services/SuitesMessagesService.php':None,'app/Controllers/AelWhatsappController.php':'4cc139a8cfbe6c8176755ecbfc0fa562754bb2e24a72093b47c451ee1f5964f5','pages/messages.php':'dcaf90a68822c87bf5bf2dc142b9dc0e7a77a21a0348836b64a54020d80d3a8d'}
 original={}
 for name,digest in before.items():
@@ -42,7 +42,7 @@ old=gateway.read_bytes();assert hashlib.sha256(old).hexdigest()=='28de8c57cb159c
 anchor='const result=await storeWhatsAppMessage(id,msg);'
 text=old.decode();assert text.count(anchor)==1
 text='import {handleSuitesMessage} from "./suites-messages-adapter.mjs";\n'+text.replace(anchor,'if(id==="suites-crepusculo"){await handleSuitesMessage(s.sock,msg);continue;}\n        '+anchor)
-subprocess.run(['node','--check'],input=text.encode(),check=True,capture_output=True)
+subprocess.run(['node','--input-type=module','--check'],input=text.encode(),check=True,capture_output=True)
 def pid(service):return subprocess.check_output(['systemctl','show',service,'-p','MainPID','--value'],text=True).strip()
 preserve={s:pid(s) for s in ['suites-crepusculo-attendance.service','superamplitude-crm.service']}
 voice_files={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in [pathlib.Path('/opt/suites-crepusculo-attendance/calls-worker.mjs'),pathlib.Path('/opt/suites-crepusculo-attendance/context.php'),site/'app/Services/AelWaCallsService.php']}
