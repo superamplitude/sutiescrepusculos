@@ -11,3 +11,9 @@
 - Removido o grupo CRM do menu; acesso Chat e voz mostra perguntas e respostas por texto no painel de gestão.
 - Não fabricar sessões administrativas para testes. Não exportar arquivos internos completos do CRM aos logs. Não versionar credenciais ou conteúdo de conversas.
 - Sem backups locais; conservar dados e sessões. Registrar execução real e testar ao terminar. Teste de contrato não comprova mensagem externa entregue: registrar separadamente o resultado real do proprietário.
+
+## Recuperação do pareamento de mensagens em 06/11/2026
+- Registro externo obrigatório da sessão: /etc/suites-messaging-gateway/session.json (root:sacrm, 0640). Não remover verificações de provisionamento.
+- Somente Suítes usa Baileys 6.7.23 em /opt/waas/app/suites-baileys; outras sessões usam a biblioteca original 7.0.0-rc14. A troca foi isolada após revogação 401 observada pelo proprietário e confirmada nos logs.
+- Autenticação atual de mensagens do Suítes: subdiretório stable-v6 dentro do diretório da própria sessão. Não apagar credenciais anteriores nem reutilizar a sessão de chamadas.
+- Teste interno real de texto/IA/duplicação/modo Humano passou com rollback de todos os registros. Entrega externa só pode ser marcada aprovada depois de pareamento estável e confirmação real.
