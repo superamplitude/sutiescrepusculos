@@ -27,9 +27,18 @@ Repositório próprio do código e dos recursos do projeto. A administração da
 
 O manifesto em `deploy/runtime-manifest-20261105.json` registra os hashes do código publicado. Configuração de produção, chaves, banco e dados privados não estão no repositório.
 
-## Pendente para atendimento completo
+## Atualização de 06/11/2026
 
-O número WhatsApp ainda precisa ser pareado no módulo WhatsApp, pelo botão **Gerar QR Code**. Recepção/resposta automática de mensagens e atendimento automático de ligações no Crepúsculo ainda não foram concluídos nem homologados. O pareamento por QR Code não comprova essas funções.
+- Grupo CRM removido do menu.
+- Botão **Chat e voz** no painel de gestão, com perguntas e respostas por texto; perguntas não são mais ignoradas enquanto a saudação prepara áudio. Enviar por Enter, interrupção/cancelamento de áudio e histórico visual verificados. A IA real retornou HTTP 200.
+- Chamadas WhatsApp: três módulos do CRM copiados por hash para o adaptador do Suítes. O proprietário confirmou uma ligação com voz funcionando e pediu para preservar esse atendimento. Nenhuma mudança ou reinício da voz foi realizado durante a publicação de mensagens.
+- Texto e áudios: publicados usando a sessão `suites-crepusculo` no gateway de mensagens existente em 18190. Processador próprio por socket Unix restrito, sem novo gateway nem endpoint público. Conversas aparecem no Atendimento; respostas humanas seguem ao WhatsApp; deduplicação, modos Humano/Híbrido/IA e codificação Ogg/Opus testados sem envios externos.
+- Mensagens precisam de pareamento próprio pelo botão **Gerar QR de mensagens**, separado do QR de chamadas. Publicação concluída pelo [pedido f3676f6](https://github.com/superamplitude/Gerente-VPS/commit/f3676f62c9337b8667501db20abddbe9852e6bcb), com `exit_code=0` em 06/11/2026 às 10:51:10 UTC.
+- Baseline atual: `deploy/runtime-manifest-20261106.json`. O manifesto anterior é histórico.
+
+## Pendente de homologação externa
+
+A voz em chamada foi confirmada pelo proprietário. A sessão independente de mensagens estava offline ao terminar a publicação de 06/11/2026. A homologação de texto/áudio enviado e recebido depende de parear essa sessão e testar com outro aparelho. Testes de contrato e serviço ativo não comprovam entrega externa.
 
 O diretório `integrations/attendance` contém um protótipo anterior não instalado. A voz publicada usa os controladores PHP em `app/` e a Central de Comunicação existente; esse protótipo não é outro serviço em execução.
 
