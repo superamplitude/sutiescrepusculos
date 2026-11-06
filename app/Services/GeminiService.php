@@ -7,12 +7,12 @@ final class GeminiService{
   public function config():array{
     $s=DB::pdo()->query("SELECT * FROM ai_config WHERE id=1");return $s->fetch()?:[];
   }
-  public function ask(string $q):array{
+  public function ask(string $q,bool $includeKnowledge=true):array{
     $c=$this->config();$apiKey=Secret::decrypt($c['api_key']??'');
     if(empty($c['enabled'])||empty($apiKey))return ['ok'=>false,'mode'=>'fallback','answer'=>$this->fallback($q),'error'=>'Gemini não configurado'];
     if(!function_exists('curl_init'))return ['ok'=>false,'mode'=>'fallback','answer'=>$this->fallback($q),'error'=>'cURL indisponível'];
     $model=$c['model']?:'gemini-2.5-flash';
-    $ctx=$this->knowledge();
+    $ctx=$includeKnowledge?$this->knowledge():'';
     $agent=trim((string)Site::get('chat_agent_name','Assistente IA'))?:'Assistente IA';
     $central=trim((string)($c['system_instruction']??''));
     $property=BusinessContextService::property();
@@ -20,10 +20,10 @@ final class GeminiService{
     if($central!=='')$rules.="\nINSTRUÇÃO DO SUPER ADMIN:\n".$central;
     $payload=['contents'=>[['parts'=>[['text'=>$rules."\n\nBASE CONFIRMADA:\n".$ctx."\n\nPERGUNTA DO CLIENTE:\n".$q]]]]];
     $ch=curl_init("https://generativelanguage.googleapis.com/v1beta/models/".rawurlencode($model).":generateContent?key=".rawurlencode($apiKey));
-    curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_POST=>true,CURLOPT_HTTPHEADER=>['Content-Type: application/json'],CURLOPT_POSTFIELDS=>json_encode($payload),CURLOPT_CONNECTTIMEOUT=>8,CURLOPT_TIMEOUT=>25,CURLOPT_IPRESOLVE=>CURL_IPRESOLVE_V4]);
+    curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_POST=>true,CURLOPT_HTTPHEADER=>['Content-Type: application/json'],CURLOPT_POSTFIELDS=>json_encode($payload),CURLOPT_CONNECTTIMEOUT=>8,CURLOPT_TIMEOUT=>($includeKnowledge?25:38),CURLOPT_IPRESOLVE=>CURL_IPRESOLVE_V4]);
     $raw=curl_exec($ch);$err=curl_error($ch);$http=(int)curl_getinfo($ch,CURLINFO_HTTP_CODE);curl_close($ch);
     if($err||$http<200||$http>=300)return ['ok'=>false,'mode'=>'gemini','answer'=>$this->fallback($q),'http'=>$http,'error'=>$err?:$raw];
-    $j=json_decode($raw,true);$a=$j['candidates'][0]['content']['parts'][0]['text']??'';
+    $j=json_decode($raw,true);$a='';foreach(($j['candidates'][0]['content']['parts']??[]) as $part)if(isset($part['text']))$a.=$part['text'];
     if(!$a)return ['ok'=>false,'mode'=>'gemini','answer'=>$this->fallback($q),'http'=>$http,'error'=>'Resposta vazia'];
     return ['ok'=>true,'mode'=>'gemini','answer'=>$a,'http'=>$http,'model'=>$model];
   }

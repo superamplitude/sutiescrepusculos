@@ -21,16 +21,34 @@ final class PanelAgentService {
     public function respond(string $question):array {
         if(!Auth::can('ai.use'))throw new \RuntimeException('Sem autorização para usar a IA.');
         unset($_SESSION['_suites_agent_pending']);
-        $pdo=DB::pdo();$prop=BusinessContextService::property();
-        $rooms=$pdo->query("SELECT id,name,base_price,capacity,status,active FROM rooms ORDER BY id LIMIT 100")->fetchAll(PDO::FETCH_ASSOC);
-        $blocks=$pdo->query("SELECT b.id,b.room_id,b.start_date,b.end_date,b.type,b.reason FROM room_blocks b WHERE b.end_date>=CURDATE() ORDER BY b.start_date LIMIT 150")->fetchAll(PDO::FETCH_ASSOC);
-        $contents=$pdo->query("SELECT id,slug,title,body,status FROM contents ORDER BY id DESC LIMIT 60")->fetchAll(PDO::FETCH_ASSOC);
-        $reservations=$pdo->query("SELECT r.id,r.code,r.room_id,r.checkin,r.checkout,r.status,g.name guest FROM reservations r JOIN guests g ON g.id=r.guest_id WHERE r.checkout>=CURDATE() ORDER BY r.id DESC LIMIT 50")->fetchAll(PDO::FETCH_ASSOC);
+        $pdo=DB::pdo();
+        $property=BusinessContextService::property();
+        $prop=[];
+        foreach(['name','category','city','state','address','address_number','neighborhood','zip','map_url','latitude','longitude','phone','whatsapp','checkin','checkout'] as $field) {
+            if(isset($property[$field]))$prop[$field]=mb_substr((string)$property[$field],0,300);
+        }
         $permissions=[];foreach(self::PERMISSIONS as $action=>$permission)if(Auth::can($permission))$permissions[]=$action;
-        $instructions="Você auxilia o gestor de uma empresa. Os dados abaixo vêm da operação real. Responda em pt-BR. NUNCA diga que efetuou uma alteração sem confirmação. Para uma mudança solicitada, retorne estritamente JSON com propriedades answer e action. action deve ser null para perguntas, ou objeto com type e os campos exigidos. Tipos permitidos (apenas os que constam em authorized_types): content_update {content_id,body} com o corpo inteiro; room_price {room_id,price}; property_update {field,value} com field em [address,address_number,city,state,neighborhood,zip,map_url,latitude,longitude,phone,whatsapp]; map_block {room_id,start_date,end_date,reason}; map_unblock {block_id}; guest_register {name,phone,email}; reservation_prebook {guest_id,room_id,checkin,checkout,guests}. Para comandos vagos, faltantes ou ambíguos, peça dados adicionais e action=null. Não invente IDs, preços, valores, disponibilidade, documentos ou pagamentos. Remover diárias significa somente remover um bloqueio operacional identificado, nunca excluir uma reserva. Não retorne Markdown delimitador de código.\n";
-        $input=['authorized_types'=>$permissions,'property'=>$prop,'rooms'=>$rooms,'blocks'=>$blocks,'contents'=>$contents,'upcoming_reservations'=>$reservations,'question'=>$question];
-        $response=(new GeminiService())->ask($instructions."\nDADOS DA OPERAÇÃO:\n".json_encode($input,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES));
-        if(empty($response['ok']))throw new \RuntimeException('IA indisponível. Verifique a configuração e a conexão.');
+        $input=['authorized_types'=>$permissions,'property'=>$prop,'question'=>$question];
+        $lower=mb_strtolower($question);
+        if(preg_match('/di[aá]ria|pre[cç]o|tarifa|quarto|acomoda[cç][aã]o|su[ií]te|reserv|h[oó]sped|calend[aá]rio|mapa|bloque/iu',$lower)){
+            $input['rooms']=$pdo->query("SELECT id,name,base_price,capacity,status FROM rooms WHERE active=1 ORDER BY id LIMIT 35")->fetchAll(PDO::FETCH_ASSOC);
+            $input['blocks']=$pdo->query("SELECT id,room_id,start_date,end_date,type FROM room_blocks WHERE end_date>=CURDATE() ORDER BY start_date LIMIT 35")->fetchAll(PDO::FETCH_ASSOC);
+        }
+        if(preg_match('/texto|p[aá]gina|conte[uú]do|site|descri[cç][aã]o|t[ií]tulo|seo/iu',$lower)){
+            $input['contents']=$pdo->query("SELECT id,slug,title,LEFT(body,1000) AS body,status FROM contents ORDER BY id DESC LIMIT 18")->fetchAll(PDO::FETCH_ASSOC);
+        }
+        if(preg_match('/reserv|h[oó]sped|check.in|check.out|entrada|sa[ií]da/iu',$lower)){
+            $input['upcoming_reservations']=$pdo->query("SELECT r.id,r.code,r.room_id,r.checkin,r.checkout,r.status FROM reservations r WHERE r.checkout>=CURDATE() ORDER BY r.id DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC);
+        }
+        $instructions="Você é a assistente virtual do painel de gestão. Converse em português brasileiro, com acolhimento e respostas curtas e naturais. Perguntas vagas como 'pode alterar uns detalhes?' devem ser respondidas normalmente, perguntando o que o gestor deseja modificar. NUNCA afirme que já alterou algo. Se o usuário pedir uma mudança com todos os dados, retorne JSON com 'answer' (texto breve) e 'action' (objeto); em dúvidas ou pedidos incompletos action=null. Nunca invente IDs, valores, disponibilidade ou confirmação de pagamento. Ações permitidas apenas em authorized_types: content_update {content_id,body}; room_price {room_id,price}; property_update {field,value} com field em address,address_number,city,state,neighborhood,zip,map_url,latitude,longitude,phone,whatsapp; map_block {room_id,start_date,end_date,reason}; map_unblock {block_id}; guest_register {name,phone,email}; reservation_prebook {guest_id,room_id,checkin,checkout,guests}. Para content_update inclua o texto integral revisado (pode pedir para o gestor abrir o editor se o trecho disponível for incompleto). Toda ação será proposta e exigirá confirmação; para mapa_unblock não remova reservas. Retorne apenas JSON válido, sem cercas Markdown.";
+        $payload=json_encode($input,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_INVALID_UTF8_SUBSTITUTE);
+        if($payload===false)throw new \RuntimeException('Não foi possível preparar o contexto.');
+        $response=(new GeminiService())->ask($instructions."\nCONTEXTO OPERACIONAL SELECIONADO:\n".$payload,false);
+        if(empty($response['ok'])){
+            $http=(int)($response['http']??0);
+            $reason=$http===429?'O provedor está ocupado. Tente novamente.':($http===0?'A IA demorou para responder. Tente novamente.':'A IA não concluiu a resposta. Tente novamente.');
+            throw new \RuntimeException($reason);
+        }
         $raw=trim((string)($response['answer']??''));
         $json=json_decode($raw,true);
         if(!is_array($json)&&preg_match('/\{[\s\S]*\}/u',$raw,$match))$json=json_decode($match[0],true);

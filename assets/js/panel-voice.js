@@ -6,7 +6,8 @@
  const answer=host.querySelector('[data-voice-answer]'),sendButton=host.querySelector('[data-voice-send]');
  const confirmBox=host.querySelector('[data-agent-confirm-box]'),confirmText=host.querySelector('[data-agent-confirm-text]');
  const csrf=host.querySelector('[name=_csrf]').value;
- let audio=null,objectUrl=null,lastText='',busy=false,speechController=null,speechVersion=0,pendingGreeting='',pendingToken='';
+ const welcomeButton=host.querySelector('[data-voice-greeting]');
+ let audio=null,objectUrl=null,lastText='',busy=false,speechController=null,speechVersion=0,pendingGreeting='',pendingToken='',welcomeText='',welcomeKey='',greetingPlayed=false;
  const sayStatus=t=>{status.textContent=t;};
  const cleanAudio=()=>{
    speechVersion++;speechController?.abort();speechController=null;
@@ -23,7 +24,7 @@
    if(!res.ok){let reason='Atendimento indisponível.';try{const data=await res.json();reason=data.error||reason;}catch{}throw Error(reason);}
    return res;
  };
- const playText=async text=>{
+ const playText=async(text,isWelcome=false)=>{
    cleanAudio();lastText=text;
    const version=speechVersion,controller=new AbortController();speechController=controller;
    sayStatus('Preparando voz…');
@@ -34,10 +35,10 @@
      const blob=await res.blob();if(version!==speechVersion)return;
      objectUrl=URL.createObjectURL(blob);audio=new Audio(objectUrl);
      audio.addEventListener('ended',()=>{if(version===speechVersion)sayStatus('Pronta para conversar.');});
-     try{await audio.play();if(version===speechVersion){sayStatus('Falando…');pendingGreeting='';}}
+     try{await audio.play();if(version===speechVersion){sayStatus('Falando…');if(isWelcome){greetingPlayed=true;pendingGreeting='';welcomeButton.hidden=true;if(welcomeKey)sessionStorage.setItem(welcomeKey,'played');}else pendingGreeting='';}}
      catch(error){
        if(version!==speechVersion)return;
-       if(error.name==='NotAllowedError'){pendingGreeting=text;sayStatus('O navegador bloqueou a reprodução automática. Toque no chat para ouvir.');}
+       if(error.name==='NotAllowedError'){if(isWelcome){pendingGreeting=text;welcomeButton.hidden=false;}sayStatus('O navegador bloqueou o início automático do áudio. Toque em Ouvir recepção.');}
        else throw error;
      }
    }catch(e){if(version===speechVersion)sayStatus(e.name==='AbortError'?'Áudio excedeu o tempo de resposta.':e.message);}
@@ -46,7 +47,7 @@
  const busyUI=v=>{busy=v;sendButton.disabled=v;question.disabled=v;host.setAttribute('aria-busy',String(v));};
  const act=async(kind,text)=>{
    if(busy)return;busyUI(true);sayStatus('Consultando IA…');
-   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),40000);
+   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),47000);
    try{
      const res=await post(kind,text,controller.signal),data=await res.json();
      if(!data.ok||!data.answer)throw Error(data.error||'Sem resposta do atendimento.');
@@ -56,7 +57,7 @@
      if(pendingToken)confirmText.textContent=data.proposal.label;
      sayStatus(pendingToken?'Confirme ou cancele a alteração.':'Resposta recebida.');
      if(!pendingToken)void playText(data.answer);
-   }catch(e){sayStatus(e.name==='AbortError'?'A IA demorou a responder.':e.message);}
+   }catch(e){const message=e.name==='AbortError'?'A IA demorou a responder.':e.message;sayStatus(message);append('Assistente',message);}
    finally{clearTimeout(timer);busyUI(false);}
  };
  const send=()=>{
@@ -66,7 +67,7 @@
  };
  toggle.addEventListener('click',()=>{
    const visible=host.hidden;host.hidden=!visible;toggle.setAttribute('aria-expanded',String(visible));
-   if(visible){question.focus();if(pendingGreeting)void playText(pendingGreeting);}
+   if(visible){question.focus();if(pendingGreeting&&!greetingPlayed)userGesture();}
  });
  host.querySelector('[data-voice-close]').addEventListener('click',()=>{cleanAudio();host.hidden=true;toggle.setAttribute('aria-expanded','false');});
  sendButton.addEventListener('click',send);
@@ -74,6 +75,7 @@
  host.querySelector('[data-voice-repeat]').addEventListener('click',()=>{if(!busy&&lastText)void playText(lastText);});
  host.querySelector('[data-voice-stop]').addEventListener('click',()=>{cleanAudio();sayStatus('Voz interrompida. Chat disponível.');});
  host.querySelector('[data-voice-test]').addEventListener('click',()=>{if(!busy)void playText('Olá. Estou pronta para conversar e ajudar no seu painel.');});
+ welcomeButton.addEventListener('click',()=>{if(!busy&&welcomeText)void playText(welcomeText,true);});
  host.querySelector('[data-agent-confirm]').addEventListener('click',()=>{if(!pendingToken)return;const token=pendingToken;pendingToken='';confirmBox.hidden=true;void act('confirm',token);});
  host.querySelector('[data-agent-cancel]').addEventListener('click',()=>{pendingToken='';confirmBox.hidden=true;void act('cancel','cancelar');});
  const mic=host.querySelector('[data-voice-mic]'),Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -84,21 +86,27 @@
    recognition.onerror=()=>sayStatus('O reconhecimento de voz falhou; use o teclado.');
  }else{mic.disabled=true;mic.title='Reconhecimento de voz indisponível neste navegador.';}
  const userGesture=()=>{
-   if(!pendingGreeting||busy)return;
-   if(audio){audio.play().then(()=>{pendingGreeting='';sayStatus('Falando…');}).catch(()=>{});}
-   else void playText(pendingGreeting);
+   if(!pendingGreeting||busy||greetingPlayed)return;
+   if(audio){
+     audio.play().then(()=>{greetingPlayed=true;pendingGreeting='';welcomeButton.hidden=true;if(welcomeKey)sessionStorage.setItem(welcomeKey,'played');sayStatus('Falando…');}).catch(()=>{welcomeButton.hidden=false;});
+   }else if(welcomeText)void playText(welcomeText,true);
  };
- document.addEventListener('pointerdown',e=>{if(e.target.closest('#suitesVoiceToggle, #suitesPanelVoice'))userGesture();},{passive:true});
+ document.addEventListener('pointerdown',e=>{
+   if(e.target.closest('[data-voice-send], [data-voice-close], [data-voice-mic], [data-voice-stop]'))return;
+   userGesture();
+ },{passive:true});
  fetch('chat.php?action=panel_voice',{credentials:'same-origin',cache:'no-store'})
    .then(r=>r.json()).then(data=>{
      if(!data.ok){sayStatus(data.error||'Entre no painel novamente.');return;}
      sayStatus(data.configured?'Voz conectada.':'Serviço de voz não configurado.');
-     const key='suites.voice.greeting.'+host.dataset.greeting;
-     if(data.configured&&!sessionStorage.getItem(key)){
-       pendingGreeting=data.greeting||'Olá. Como posso ajudar?';
-       append('Assistente',pendingGreeting);
-       void playText(pendingGreeting);
-       sessionStorage.setItem(key,'1');
+     welcomeKey='suites.voice.greeting.'+host.dataset.greeting;
+     welcomeText=data.greeting||'Olá. Como posso ajudar?';
+     if(!data.configured){append('Assistente','A recepção por voz está indisponível; o chat continua disponível.');return;}
+     if(sessionStorage.getItem(welcomeKey)!=='played'){
+       pendingGreeting=welcomeText;
+       append('Assistente',welcomeText);
+       welcomeButton.hidden=false;
+       void playText(welcomeText,true);
      }
    }).catch(()=>sayStatus('Falha ao consultar serviço de voz.'));
  window.addEventListener('pagehide',cleanAudio);
