@@ -23,7 +23,7 @@ export async function startMessagesServer(context){
    if(typeof input.id!=='string'||input.id.length>190||!/^[0-9]+@(s\.whatsapp\.net|lid)$/.test(input.jid||''))return send(422,{ok:false});
    const result=await context('message',input);
    if(result.wav){try{result.audio=(await opus(Buffer.from(result.wav,'base64'))).toString('base64');}catch{result.audio_error=true;}delete result.wav;}
-   send(200,result);
+   console.log('SUITES_MESSAGE_RESULT',JSON.stringify({reply:Boolean(result.answer),audio:Boolean(result.audio),skip:Boolean(result.skip)}));send(200,result);
   }catch{send(503,{ok:false,error:'MESSAGE_PROCESSING_UNAVAILABLE'});}
  });
  await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(socket,resolve);});await chmod(socket,0o660);
