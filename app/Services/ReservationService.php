@@ -21,7 +21,7 @@ final class ReservationService{
     if($n<1)throw new \RuntimeException('Período inválido.');
     $total=(float)$r['base_price']*$n;
     if($guests>1)$total+=(($guests-1)*(float)$r['extra_guest_fee']*$n);
-    $s=$pdo->prepare("SELECT price FROM tariffs WHERE room_id=? AND start_date<=? AND end_date>=? ORDER BY priority DESC,id DESC LIMIT 1");
+    $s=$pdo->prepare("SELECT price FROM tariffs WHERE room_id=? AND active=1 AND start_date<=? AND end_date>=? ORDER BY priority DESC,id DESC LIMIT 1");
     $s->execute([$room,$in,$out]);
     if($t=$s->fetch())$total=(float)$t['price']*$n;
     return $total;
