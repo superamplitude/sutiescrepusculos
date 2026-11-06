@@ -10,8 +10,10 @@ final class PanelVoiceController {
         $service=new PanelVoiceService();
         if (($_SERVER['REQUEST_METHOD']??'GET')==='GET') {
             $name=explode(' ',trim((string)(Auth::user()['name']??'')))[0];
-            $text='Olá'.($name!==''?', '.$name:'').'. Bem-vindo às Suítes Crepúsculo.';
-            if (Auth::can('reservations.manage')) {
+            $property=\App\Services\BusinessContextService::property();
+            $company=trim((string)($property['name']??''))?:'seu estabelecimento';
+            $text='Olá'.($name!==''?', '.$name:'').'. Bem-vindo ao painel de '.$company.'.';
+            if (Auth::can('reservations.manage') && \App\Services\BusinessContextService::isLodging($property)) {
                 $pdo=DB::pdo();
                 $pending=(int)$pdo->query("SELECT COUNT(*) FROM reservations WHERE status IN('pre_reserva','aguardando_aprovacao')")->fetchColumn();
                 $arrivals=(int)$pdo->query("SELECT COUNT(*) FROM reservations WHERE checkin=CURDATE() AND status IN('paga','confirmada')")->fetchColumn();
@@ -31,7 +33,7 @@ final class PanelVoiceController {
         $rate['count']++;$_SESSION['_panel_voice_rate']=$rate;session_write_close();
         try {
             if ($kind==='answer') {
-                $r=(new GeminiService())->ask('Oriente o usuário do painel da pousada sobre reservas, acomodações, mapa de diárias e atendimento. Converse em uma ou duas frases conectadas, sem saudações repetidas e com no máximo uma pergunta. Não afirme ter executado ações. Pergunta: '.$text);
+                $r=(new GeminiService())->ask('Oriente o usuário do painel do estabelecimento conforme os serviços cadastrados. Converse em uma ou duas frases conectadas, sem saudações repetidas e com no máximo uma pergunta. Não afirme ter executado ações. Pergunta: '.$text);
                 if (empty($r['ok'])) throw new \RuntimeException('O atendimento por IA está indisponível.');
                 self::json(['ok'=>true,'answer'=>trim((string)$r['answer'])]);
             }
