@@ -1,5 +1,6 @@
 <?php
 define('SUITES_PAGE_ENTRY', true);
+if(!defined('SUITES_PANEL_ENTRY') && ($_GET['p']??'')==='login' && ($_SERVER['REQUEST_METHOD']??'GET')==='GET'){header('Location: /painel/',true,302);exit;}
 
 require __DIR__.'/app/bootstrap.php';
 use App\Core\DB;use App\Core\Auth;use App\Core\Csrf;use App\Core\U;use App\Core\Audit;use App\Core\Secret;use App\Core\Site;

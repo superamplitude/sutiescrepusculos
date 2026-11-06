@@ -6,3 +6,5 @@
 - Preservar a identidade vocal, credenciais, pareamentos, permissões e dados existentes. Não alterar outros projetos.
 - Não fabricar sessões administrativas em produção. Não exportar fontes privadas, credenciais ou conversas para logs.
 - Registrar execução real no repositório operacional e testar ao terminar. Geração técnica de áudio não comprova avaliação auditiva humana.
+
+- Todas as rotas administrativas e o login estão fisicamente em painel/pages/<rota>.php; o portal público permanece em pages/<rota>.php. Entrada de login dedicada: /painel/ via o mesmo Auth/DB/CSRF. Sem segundo servidor, runner ou credenciais.

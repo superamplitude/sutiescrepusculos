@@ -14,7 +14,7 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
       $field=$action==='remove_logo'?'logo_path':'favicon_path';
       $old=(string)($site[$field]??'');
       $pdo->prepare("UPDATE site_settings SET $field=NULL,updated_at=NOW() WHERE id=1")->execute();
-      if($old!=='' && str_starts_with($old,'storage/uploads/site/')){ $full=dirname(__DIR__).'/'.$old; if(is_file($full))@unlink($full); }
+      if($old!=='' && str_starts_with($old,'storage/uploads/site/')){ $full=dirname(__DIR__,2).'/'.$old; if(is_file($full))@unlink($full); }
       Site::resetCache();Audit::log('site.asset.remove','site_settings',1,['field'=>$field]);
       U::flash('ok',$field==='logo_path'?'Logomarca removida.':'Favicon removido.');U::redirect('index.php?p=site_admin');
     }
@@ -28,8 +28,8 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
 
     $logo=(string)($site['logo_path']??'');
     $favicon=(string)($site['favicon_path']??'');
-    if(!empty($_FILES['logo_file']['name'])){$new=$upload->image($_FILES['logo_file'],'site');if($new){if($logo&&str_starts_with($logo,'storage/uploads/site/')&&is_file(dirname(__DIR__).'/'.$logo))@unlink(dirname(__DIR__).'/'.$logo);$logo=$new;}}
-    if(!empty($_FILES['favicon_file']['name'])){$new=$upload->image($_FILES['favicon_file'],'site');if($new){if($favicon&&str_starts_with($favicon,'storage/uploads/site/')&&is_file(dirname(__DIR__).'/'.$favicon))@unlink(dirname(__DIR__).'/'.$favicon);$favicon=$new;}}
+    if(!empty($_FILES['logo_file']['name'])){$new=$upload->image($_FILES['logo_file'],'site');if($new){if($logo&&str_starts_with($logo,'storage/uploads/site/')&&is_file(dirname(__DIR__,2).'/'.$logo))@unlink(dirname(__DIR__,2).'/'.$logo);$logo=$new;}}
+    if(!empty($_FILES['favicon_file']['name'])){$new=$upload->image($_FILES['favicon_file'],'site');if($new){if($favicon&&str_starts_with($favicon,'storage/uploads/site/')&&is_file(dirname(__DIR__,2).'/'.$favicon))@unlink(dirname(__DIR__,2).'/'.$favicon);$favicon=$new;}}
 
     $uiKeys=['menu_home','menu_about','menu_accommodations','menu_gastronomy','menu_experiences','menu_offers','menu_contact','booking_cta','traveler_label','hero_kicker','hero_title','hero_description','hero_primary_cta','hero_secondary_cta','hero_search_cta','intro_eyebrow','intro_title','footer_bottom','chat_launcher_title','chat_launcher_subtitle'];
     $newUi=$ui;foreach($uiKeys as $k)$newUi[$k]=trim((string)($_POST['ui'][$k]??''));

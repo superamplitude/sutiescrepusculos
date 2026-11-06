@@ -7,6 +7,6 @@ final class PageRoutes {
   $r=self::all()[$name]??null;
   if(!$r||$r['access']!==$access||!in_array($method,$r['methods'],true))return null;
   if($r['file']!==$name.'.php'||!preg_match('/^[a-z][a-z0-9_]*\.php$/D',$r['file']))throw new \RuntimeException('Invalid registered page');
-  return dirname(__DIR__,2).'/pages/'.$r['file'];
+  $root=dirname(__DIR__,2); if($access==='admin'||$name==='login')return $root.'/painel/pages/'.$r['file']; return $root.'/pages/'.$r['file'];
  }
 }

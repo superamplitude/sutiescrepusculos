@@ -60,7 +60,7 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
         throw $e;
       }
       if($old!=='' && str_starts_with($old,'storage/uploads/')){
-        $full=dirname(__DIR__).'/'.$old;
+        $full=dirname(__DIR__,2).'/'.$old;
         if(is_file($full))@unlink($full);
       }
       Audit::log('property.cover.delete','property',1,['field'=>$field,'source'=>$old]);

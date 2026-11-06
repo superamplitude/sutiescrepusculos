@@ -10,5 +10,5 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
     if($m['scope']==='room'&&$m['entity_id'])$pdo->prepare("UPDATE rooms SET cover_image=IF(cover_image=?,NULL,cover_image),video_path=IF(video_path=?,NULL,video_path),updated_at=NOW() WHERE id=?")->execute([$src,$src,(int)$m['entity_id']]);
   }
   $pdo->prepare("DELETE FROM media WHERE id=?")->execute([$id]);
-  if($file && str_starts_with($file,'storage/uploads/')){@unlink(dirname(__DIR__).'/'.$file);}
+  if($file && str_starts_with($file,'storage/uploads/')){@unlink(dirname(__DIR__,2).'/'.$file);}
   $ret=in_array($_POST['return_to']??'gallery',['gallery','rooms'],true)?($_POST['return_to']??'gallery'):'gallery';Audit::log('media.delete','media',$id);U::redirect('index.php?p='.$ret);

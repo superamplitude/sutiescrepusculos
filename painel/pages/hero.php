@@ -23,7 +23,7 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
       }
       foreach($files as $file){
         if($file && str_starts_with((string)$file,'storage/uploads/')){
-          $full=dirname(__DIR__).'/'.$file;
+          $full=dirname(__DIR__,2).'/'.$file;
           if(is_file($full))@unlink($full);
         }
       }
@@ -125,7 +125,7 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
         throw $e;
       }
 
-      if($file && str_starts_with($file,'storage/uploads/'))@unlink(dirname(__DIR__).'/'.$file);
+      if($file && str_starts_with($file,'storage/uploads/'))@unlink(dirname(__DIR__,2).'/'.$file);
       Audit::log('hero.media.delete','media',$id);
       U::flash('ok','Mídia removida do hero.');
       U::redirect('index.php?p=hero');

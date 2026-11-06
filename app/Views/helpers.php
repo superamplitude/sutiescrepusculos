@@ -2,7 +2,7 @@
 use App\Core\DB;use App\Core\Auth;use App\Core\Csrf;use App\Core\U;use App\Core\Audit;use App\Core\Secret;use App\Core\Site;use App\Services\ReservationService;use App\Services\GeminiService;use App\Services\UploadService;use App\Services\ICalService;use App\Controllers\WhatsappController;
 if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
 
-function render(string $title,string $html,string $meta=''):void{ob_start();echo $html;$content=ob_get_clean();$metaDescription=$meta;include __DIR__.'/layout.php';}
+function render(string $title,string $html,string $meta=''):void{ob_start();echo $html;$content=ob_get_clean();$metaDescription=$meta; if(defined('SUITES_PANEL_ENTRY') && ($_GET['p']??'')==='login' && !Auth::user()){include __DIR__.'/panel-login.php';return;} include __DIR__.'/layout.php';}
 function row(string $label,string $name,mixed $value='',string $type='text'):string{
   $e=htmlspecialchars((string)$value,ENT_QUOTES,'UTF-8');
   if($type==='textarea')return "<label>$label<textarea name=\"$name\">$e</textarea></label>";
