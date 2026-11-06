@@ -488,5 +488,12 @@
       "GET",
       "POST"
     ]
+  },
+  "guest_document_download": {
+    "file": "guest_document_download.php",
+    "access": "public",
+    "methods": [
+      "GET"
+    ]
   }
 }
