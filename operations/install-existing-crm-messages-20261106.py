@@ -9,7 +9,11 @@ gateway=pathlib.Path('/opt/waas/app/server.mjs');adapter=pathlib.Path('/opt/waas
 unit=pathlib.Path('/etc/systemd/system/suites-crepusculo-messages.service')
 dropin=pathlib.Path('/etc/systemd/system/sa-crm-whatsapp-gateway.service.d/suites-messages.conf')
 assert not root.exists() and not unit.exists() and not adapter.exists() and not dropin.exists(),'Refusing to overwrite an existing integration'
-assert pathlib.Path('/usr/bin/ffmpeg').is_file(),'Existing audio encoder unavailable'
+if not pathlib.Path('/usr/bin/ffmpeg').is_file():
+ env={**os.environ,'DEBIAN_FRONTEND':'noninteractive','NEEDRESTART_MODE':'l'}
+ subprocess.run(['apt-get','update','-qq'],env=env,check=True,capture_output=True,timeout=180)
+ subprocess.run(['apt-get','install','-y','--no-install-recommends','ffmpeg'],env=env,check=True,capture_output=True,timeout=240)
+ print('OFFICIAL_AUDIO_ENCODER_INSTALLED=1; AUTOMATIC_SERVICE_RESTARTS_DISABLED=1')
 ref='e61ef664d164303113331f80aa800d0d8ec01e41'
 files={
 'integrations/attendance/messages-worker.mjs':'a7de20ac1d2f66957e4506ac109e10d591d9aba6cfb733dfa48b4adf7243ede4',
