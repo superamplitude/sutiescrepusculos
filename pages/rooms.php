@@ -118,7 +118,9 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
     if($action!=='save')throw new RuntimeException('Ação inválida.');
     if(trim($_POST['code']??'')===''||trim($_POST['name']??'')==='')throw new RuntimeException('Código e nome da unidade são obrigatórios.');
     if((int)($_POST['capacity']??0)<1||(int)($_POST['adults']??0)<1)throw new RuntimeException('Informe capacidade máxima e quantidade de adultos.');
-    if(!isset($_POST['base_price'])||$_POST['base_price']===''||(float)$_POST['base_price']<0)throw new RuntimeException('Informe uma diária-base válida.');
+    // Legacy column is kept for compatibility, but never editable here: Diárias is the price source.
+    $storedBase=0.0;
+    if($id>0){$p=$pdo->prepare("SELECT base_price FROM rooms WHERE id=? LIMIT 1");$p->execute([$id]);$base=$p->fetchColumn();if($base===false)throw new RuntimeException('Unidade não encontrada.');$storedBase=(float)$base;}
     if((int)($_POST['min_nights']??0)<1)throw new RuntimeException('Informe o mínimo de noites (1 ou mais).');
     $beds=[];
     foreach(['casal','queen','king','solteiro','solteiro_xl','beliche','sofa_cama','dobravel','murphy'] as $b){$n=max(0,(int)($_POST["bed_$b"]??0));if($n>0)$beds[$b]=$n;}
@@ -127,7 +129,7 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
     if(!empty($_FILES['cover_image']['name']))$cover=$upload->image($_FILES['cover_image'],'rooms');
     if(!empty($_FILES['video_file']['name']))$videoPath=$upload->video($_FILES['video_file'],'rooms');
     $status=in_array($_POST['status']??'', ['active','inactive','maintenance'],true)?$_POST['status']:'inactive';
-    $vals=[trim($_POST['code']),trim($_POST['name']),$_POST['type'],$_POST['short_description'],$_POST['description'],$status,(int)$_POST['capacity'],(int)$_POST['adults'],(int)$_POST['children'],array_sum($beds),json_encode($beds,JSON_UNESCAPED_UNICODE),$_POST['bathroom_type'],$_POST['floor_name'],$_POST['internal_location'],isset($_POST['balcony'])?1:0,$_POST['view_name'],$_POST['area_m2']?:null,$_POST['video_url'],$cover,$videoPath,$_POST['rules'],(float)$_POST['base_price'],(float)$_POST['extra_guest_fee'],(int)$_POST['min_nights'],$_POST['max_nights']!==''?(int)$_POST['max_nights']:null,(float)$_POST['cleaning_fee'],isset($_POST['active'])?1:0];
+    $vals=[trim($_POST['code']),trim($_POST['name']),$_POST['type'],$_POST['short_description'],$_POST['description'],$status,(int)$_POST['capacity'],(int)$_POST['adults'],(int)$_POST['children'],array_sum($beds),json_encode($beds,JSON_UNESCAPED_UNICODE),$_POST['bathroom_type'],$_POST['floor_name'],$_POST['internal_location'],isset($_POST['balcony'])?1:0,$_POST['view_name'],$_POST['area_m2']?:null,$_POST['video_url'],$cover,$videoPath,$_POST['rules'],$storedBase,(float)$_POST['extra_guest_fee'],(int)$_POST['min_nights'],$_POST['max_nights']!==''?(int)$_POST['max_nights']:null,(float)$_POST['cleaning_fee'],isset($_POST['active'])?1:0];
     if($id){
       $sql="UPDATE rooms SET code=?,name=?,type=?,short_description=?,description=?,status=?,capacity=?,adults=?,children=?,beds_count=?,beds_json=?,bathroom_type=?,floor_name=?,internal_location=?,balcony=?,view_name=?,area_m2=?,video_url=?,cover_image=?,video_path=?,rules=?,base_price=?,extra_guest_fee=?,min_nights=?,max_nights=?,cleaning_fee=?,active=?,updated_at=NOW() WHERE id=?";$vals[]=$id;$pdo->prepare($sql)->execute($vals);
     }else{
@@ -197,7 +199,7 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   if($media){$h.='<div class=gallery>';foreach($media as $m){$src=$m['file_path']?:$m['url'];if(!$src)continue;$h.='<figure><img src="'.U::e(safeUrl($src)).'" alt="'.U::e($m['alt_text']).'"><figcaption>'.U::e($m['caption']).'</figcaption></figure>';}$h.='</div>';}
   $h.='</section>';
   }
-  $h.='<h3>Taxas e condições</h3><input type=hidden name=base_price value="'.U::e($x['base_price']===''?'0':$x['base_price']).'"><div class=grid3>'.row('Hóspede extra','extra_guest_fee',$x['extra_guest_fee'],'number').row('Taxa de limpeza','cleaning_fee',$x['cleaning_fee'],'number').row('Noites mínimas','min_nights',$x['min_nights'],'number').row('Noites máximas','max_nights',$x['max_nights'],'number').'</div><h3>Comodidades</h3><div class=amenities>';
+  $h.='<h3>Taxas e condições</h3><div class=grid3>'.row('Hóspede extra','extra_guest_fee',$x['extra_guest_fee'],'number').row('Taxa de limpeza','cleaning_fee',$x['cleaning_fee'],'number').row('Noites mínimas','min_nights',$x['min_nights'],'number').row('Noites máximas','max_nights',$x['max_nights'],'number').'</div><h3>Comodidades</h3><div class=amenities>';
   $cat='';foreach($ams as $a){if($cat!==$a['category']){$cat=$a['category'];$h.='<h4>'.U::e($cat).'</h4>';}$h.='<label class=check><input type=checkbox name="amenities[]" value="'.$a['id'].'" '.(in_array($a['id'],$selected)?'checked':'').'> '.U::e($a['name']).'</label>';}
   $h.='</div>'.row('Publicar esta unidade','active',$x['active'],'checkbox').'<div class="form-actions"><button type="submit">'.($edit?'Salvar alterações':'Adicionar unidade').'</button>'.($edit?'<button type="button" class="btn secondary" data-room-close>Cancelar</button>':'<a class="btn secondary" href="index.php?p=rooms">Cancelar</a>').'</div></form>';
   if($edit){
