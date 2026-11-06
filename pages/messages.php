@@ -8,11 +8,17 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
     Csrf::check();$cid=(int)($_POST['conversation_id']??0);$action=(string)($_POST['action']??'reply');
     if($action==='set_mode'){
       $mode=in_array($_POST['mode']??'hybrid',['human','hybrid','ai'],true)?$_POST['mode']:'hybrid';
-      $pdo->prepare("UPDATE conversations SET mode=?,assigned_user_id=?,updated_at=NOW() WHERE id=?")->execute([$mode,Auth::user()['id'],$cid]);
+      $pdo->prepare("UPDATE conversations SET mode=?,assigned_user_id=?,updated_at=NOW() WHERE id=?")->execute([$mode,$mode==='human'?Auth::user()['id']:null,$cid]);
       Audit::log('conversation.mode','conversation',$cid,['mode'=>$mode]);U::flash('ok','Modo do atendimento atualizado.');U::redirect('index.php?p=messages&id='.$cid);
     }
     $body=trim((string)($_POST['body']??''));
     if($body!==''){
+      $cq=$pdo->prepare("SELECT channel,guest_id FROM conversations WHERE id=?");$cq->execute([$cid]);$conversation=$cq->fetch();
+      if(($conversation['channel']??'')==='whatsapp'){
+        $jq=$pdo->prepare("SELECT jid FROM suites_whatsapp_contacts WHERE guest_id=? LIMIT 1");$jq->execute([$conversation['guest_id']]);$jid=(string)$jq->fetchColumn();
+        try{(new \App\Services\SuitesMessagesService())->sendText($jid,$body);}
+        catch(Throwable){U::flash('err','A mensagem não foi enviada ao WhatsApp. Confira a conexão e tente novamente.');U::redirect('index.php?p=messages&id='.$cid);}
+      }
       $pdo->prepare("INSERT INTO messages(conversation_id,sender_type,body,created_at) VALUES(?,'staff',?,NOW())")->execute([$cid,$body]);try{(new \App\Services\CrmSyncService(currentCompanyId()))->syncConversation($cid);}catch(Throwable $crmError){}
       // Ao responder manualmente, o humano assume a conversa e a IA pausa automaticamente.
       $pdo->prepare("UPDATE conversations SET assigned_user_id=?,mode='human',updated_at=NOW() WHERE id=?")->execute([Auth::user()['id'],$cid]);
