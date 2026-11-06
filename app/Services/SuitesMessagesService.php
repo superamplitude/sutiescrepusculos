@@ -3,13 +3,17 @@ declare(strict_types=1);
 namespace App\Services;
 final class SuitesMessagesService {
  private const BASE='http://127.0.0.1:18190/sessions/suites-crepusculo';
- private function request(string $method,string $action):array{
+ private function request(string $method,string $action,array $payload=[]):array{
   $ch=curl_init(self::BASE.'/'.$action);
   curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_CUSTOMREQUEST=>$method,CURLOPT_CONNECTTIMEOUT=>3,CURLOPT_TIMEOUT=>12,CURLOPT_FOLLOWLOCATION=>false,CURLOPT_HTTPHEADER=>['Accept: application/json','Content-Type: application/json']]);
-  if($method==='POST')curl_setopt($ch,CURLOPT_POSTFIELDS,'{}');
+  if($method==='POST')curl_setopt($ch,CURLOPT_POSTFIELDS,json_encode($payload?:new \stdClass(),JSON_THROW_ON_ERROR));
   $raw=curl_exec($ch);$http=(int)curl_getinfo($ch,CURLINFO_HTTP_CODE);curl_close($ch);$data=json_decode((string)$raw,true);
   if($http!==200||!is_array($data)||empty($data['ok']))throw new \RuntimeException('O serviço de mensagens está indisponível.');
   return $data;
+ }
+ public function sendText(string $jid,string $text):array{
+  if(!preg_match('/^[0-9]+@(s\.whatsapp\.net|lid)$/D',$jid)||trim($text)===''||mb_strlen($text)>4000)throw new \RuntimeException('Mensagem inválida.');
+  return $this->request('POST','send',['jid'=>$jid,'text'=>$text]);
  }
  public function status():array{return $this->request('GET','status')['session']??['status'=>'offline'];}
  public function qr():?string{
