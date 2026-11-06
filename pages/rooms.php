@@ -199,8 +199,20 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   if($media){$h.='<div class=gallery>';foreach($media as $m){$src=$m['file_path']?:$m['url'];if(!$src)continue;$h.='<figure><img src="'.U::e(safeUrl($src)).'" alt="'.U::e($m['alt_text']).'"><figcaption>'.U::e($m['caption']).'</figcaption></figure>';}$h.='</div>';}
   $h.='</section>';
   }
-  $h.='<h3>Taxas e condições</h3><div class=grid3>'.row('Hóspede extra','extra_guest_fee',$x['extra_guest_fee'],'number').row('Taxa de limpeza','cleaning_fee',$x['cleaning_fee'],'number').row('Noites mínimas','min_nights',$x['min_nights'],'number').row('Noites máximas','max_nights',$x['max_nights'],'number').'</div><h3>Comodidades</h3><div class=amenities>';
-  $cat='';foreach($ams as $a){if($cat!==$a['category']){$cat=$a['category'];$h.='<h4>'.U::e($cat).'</h4>';}$h.='<label class=check><input type=checkbox name="amenities[]" value="'.$a['id'].'" '.(in_array($a['id'],$selected)?'checked':'').'> '.U::e($a['name']).'</label>';}
+  $h.='<h3>Taxas e condições</h3><div class=grid3>'.row('Hóspede extra','extra_guest_fee',$x['extra_guest_fee'],'number').row('Taxa de limpeza','cleaning_fee',$x['cleaning_fee'],'number').row('Noites mínimas','min_nights',$x['min_nights'],'number').row('Noites máximas','max_nights',$x['max_nights'],'number').'</div><h3>Comodidades</h3><div class="room-amenities">';
+  $cat=null;
+  foreach($ams as $a){
+    if($cat!==$a['category']){
+      if($cat!==null)$h.='</div></section>';
+      $cat=$a['category'];
+      $h.='<section class="room-amenities-group"><h4>'.U::e($cat).'</h4><div class="room-amenities-grid">';
+    }
+    $enabled=in_array($a['id'],$selected);
+    $h.='<label class="room-amenity-toggle"><span class="room-amenity-name">'.U::e($a['name']).'</span>'
+      .'<span class="room-amenity-control"><input type="checkbox" name="amenities[]" value="'.(int)$a['id'].'"'.($enabled?' checked':'').'>'
+      .'<span class="room-amenity-switch" aria-hidden="true"></span><span class="room-amenity-state" aria-hidden="true"></span></span></label>';
+  }
+  if($cat!==null)$h.='</div></section>';
   $h.='</div>'.row('Publicar esta unidade','active',$x['active'],'checkbox').'<div class="form-actions"><button type="submit">'.($edit?'Salvar alterações':'Adicionar unidade').'</button>'.($edit?'<a class="btn secondary" href="index.php?p=rooms&view=edit&id='.(int)$edit['id'].'" data-room-close>Cancelar</a>':'<a class="btn secondary" href="index.php?p=rooms">Cancelar</a>').'</div></form>';
   if($edit){
     $h.='</div></dialog>';
