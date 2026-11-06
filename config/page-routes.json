@@ -480,5 +480,13 @@
       "GET",
       "POST"
     ]
+  },
+  "attendance_settings": {
+    "file": "attendance_settings.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
   }
 }
