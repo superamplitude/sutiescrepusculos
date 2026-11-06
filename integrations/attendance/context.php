@@ -20,6 +20,7 @@ if($action==='context'){
  $profile=new \App\Services\VoiceProfileService();
  $prompt=$profile->conversationInstructions()."\n\n";
  $prompt.=\App\Services\BusinessContextService::instructions($property)."\nBASE CONFIRMADA:\n".json_encode(['property'=>$property,'knowledge'=>$kb],JSON_UNESCAPED_UNICODE);
+ if($phone!=='')$prompt.="\nCONTATO IDENTIFICADO NESTA LIGAÇÃO (não recitar, validar autorização de uso): {$phone}\n";
  echo json_encode(['enabled'=>true,'api_key'=>$voice['provider_api_key']??'','prompt'=>$prompt],JSON_UNESCAPED_UNICODE);exit;
 }
 if($action==='availability'){
