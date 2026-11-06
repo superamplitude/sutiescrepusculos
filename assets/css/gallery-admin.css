@@ -1,0 +1,26 @@
+/* Gallery admin only — keep the existing media grid and upload behavior. */
+.admin-mode .gallery-toolbar{display:flex;align-items:center;gap:10px;margin:0 0 18px}
+.admin-mode .gallery-toolbar .btn{display:inline-flex;align-items:center;justify-content:center;background:#ed7a1e;color:#fff;border:1px solid #cc650e;border-radius:8px;min-height:38px;padding:8px 15px;font-weight:700}
+.admin-mode .gallery-toolbar .btn:hover{background:#c7600e}
+.admin-mode dialog.gallery-admin-dialog{
+  box-sizing:border-box;position:fixed;top:50%;left:50%;right:auto;bottom:auto;
+  transform:translate(-50%,-50%);width:min(550px,calc(100vw - 28px));max-width:550px;
+  max-height:min(84dvh,710px);margin:0;padding:16px 18px;background:#fff;
+  border:1px solid #99afa8;border-radius:13px;overflow-y:auto;overscroll-behavior:contain;
+  box-shadow:0 20px 66px #0e322555;color:#243b34;
+}
+.admin-mode dialog.gallery-admin-dialog:not([open]){display:none!important}
+.admin-mode dialog.gallery-admin-dialog::backdrop{background:rgba(11,35,29,.66)}
+.admin-mode .gallery-dialog-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid #dfe8e4}
+.admin-mode .gallery-dialog-heading h2{font-size:17px;margin:0 0 5px}
+.admin-mode .gallery-dialog-heading p{font-size:12px;color:#60776a;margin:0}
+.admin-mode .gallery-dialog-heading [data-gallery-close]{display:flex;align-items:center;justify-content:center;text-decoration:none;font-weight:700;font-size:23px;width:32px;height:32px;flex:0 0 32px;border:1px solid #c3d1c9;border-radius:8px;color:#315449;background:#f8fbf8}
+.admin-mode .gallery-dialog-form{margin:0}
+.admin-mode .gallery-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.admin-mode .gallery-form-grid label{min-width:0}
+.admin-mode .gallery-form-grid input,.admin-mode .gallery-form-grid select{min-width:0;max-width:100%;box-sizing:border-box}
+.admin-mode .gallery-dialog-form .gallery-dialog-actions{display:flex;justify-content:flex-end;gap:8px;align-items:center;margin-top:13px}
+.admin-mode .gallery-dialog-form .gallery-dialog-actions a,.admin-mode .gallery-dialog-form .gallery-dialog-actions button{display:inline-flex;align-items:center;justify-content:center;min-height:36px;margin:0;padding:7px 12px;border-radius:8px;font-size:12px;text-decoration:none}
+.admin-mode .gallery-dialog-form .gallery-dialog-actions button{background:#ed7a1e;color:#fff;border:1px solid #c76513}
+.admin-mode .gallery-dialog-form .gallery-dialog-actions a{background:#f7f9f7;color:#315148;border:1px solid #bfcfc6}
+@media(max-width:540px){.admin-mode dialog.gallery-admin-dialog{padding:12px;max-height:calc(100dvh - 20px)}.admin-mode .gallery-form-grid{grid-template-columns:1fr}}
