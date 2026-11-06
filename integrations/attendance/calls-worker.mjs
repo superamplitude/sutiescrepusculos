@@ -1,9 +1,9 @@
 // Glue only: uses copies of the verified CRM voice modules and the existing local gateway.
-import {spawn} from 'node:child_process';
-
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
 import {readFile,writeFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
-
+const exec=promisify(execFile);
 export class SuitesCallAttendance{
  constructor({client,makeBridge,context,report=()=>{}}){Object.assign(this,{client,makeBridge,context,report});this.active=new Map();this.sessionId='';}
  async refresh(){
@@ -62,18 +62,10 @@ async function main(){
  const client=new WacallsClient({baseUrl:env.WACALLS_API_BASE_URL,apiToken:env.WACALLS_API_TOKEN});
  let status={project:'suites-crepusculo',gateway:false,paired:false,active_calls:0};
  const report=patch=>{status={...status,...patch,updated_at:new Date().toISOString()};void writeFile('/run/suites-attendance/status.json',JSON.stringify(status),{mode:0o640}).catch(()=>{});};
- const context=(action,data)=>new Promise((resolve,reject)=>{
-  const child=spawn('/usr/bin/php',[new URL('./context.php',import.meta.url).pathname,action],{stdio:['pipe','pipe','pipe']});
-  const chunks=[];let n=0;const timer=setTimeout(()=>child.kill(),100000);child.stderr.resume();child.stdin.on('error',()=>{});
-  child.stdout.on('data',b=>{n+=b.length;if(n>8*1024*1024)child.kill();else chunks.push(b);});
-  child.on('error',reject);child.on('close',code=>{clearTimeout(timer);try{if(code!==0)throw Error('LOCAL_CONTEXT_FAILED');resolve(JSON.parse(Buffer.concat(chunks)));}catch(e){reject(e);}});
-  child.stdin.end(JSON.stringify(data));
- });
- const {startMessagesServer}=await import('./messages-server.mjs');
- const messagesServer=await startMessagesServer(context);
+ const context=async(action,data)=>{const {stdout}=await exec('/usr/bin/php',[new URL('./context.php',import.meta.url).pathname,action,JSON.stringify(data)],{timeout:15000,maxBuffer:200000});return JSON.parse(stdout);};
  const attendance=new SuitesCallAttendance({client,context,makeBridge:opts=>new WhatsappVoiceAiBridge(opts),report});
  const controller=new AbortController();let quitting=false;
- const shutdown=async()=>{quitting=true;controller.abort();await attendance.stop();messagesServer.close();};
+ const shutdown=async()=>{quitting=true;controller.abort();await attendance.stop();};
  process.once('SIGTERM',shutdown);process.once('SIGINT',shutdown);
  while(!quitting){
   try{await attendance.refresh();await client.eventStream(event=>attendance.event(event),{signal:controller.signal});}
