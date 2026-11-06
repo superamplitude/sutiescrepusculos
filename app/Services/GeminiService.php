@@ -22,6 +22,16 @@ final class GeminiService{
     $ch=curl_init("https://generativelanguage.googleapis.com/v1beta/models/".rawurlencode($model).":generateContent?key=".rawurlencode($apiKey));
     curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_POST=>true,CURLOPT_HTTPHEADER=>['Content-Type: application/json'],CURLOPT_POSTFIELDS=>json_encode($payload),CURLOPT_CONNECTTIMEOUT=>8,CURLOPT_TIMEOUT=>($includeKnowledge?25:38),CURLOPT_IPRESOLVE=>CURL_IPRESOLVE_V4]);
     $raw=curl_exec($ch);$err=curl_error($ch);$http=(int)curl_getinfo($ch,CURLINFO_HTTP_CODE);curl_close($ch);
+    // Panel-only failover for provider quota (429): reuse the already-supported
+    // Gemini 2.5 Flash model with the same configured key. At most one extra call.
+    if(!$includeKnowledge && $http===429 && $model!=='gemini-2.5-flash'){
+      $backup='gemini-2.5-flash';
+      $ch=curl_init("https://generativelanguage.googleapis.com/v1beta/models/".rawurlencode($backup).":generateContent?key=".rawurlencode($apiKey));
+      curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_POST=>true,CURLOPT_HTTPHEADER=>['Content-Type: application/json'],CURLOPT_POSTFIELDS=>json_encode($payload),CURLOPT_CONNECTTIMEOUT=>8,CURLOPT_TIMEOUT=>35,CURLOPT_IPRESOLVE=>CURL_IPRESOLVE_V4]);
+      $retry=curl_exec($ch);$retryErr=curl_error($ch);$retryHttp=(int)curl_getinfo($ch,CURLINFO_HTTP_CODE);curl_close($ch);
+      if(!$retryErr && $retryHttp>=200 && $retryHttp<300){$raw=$retry;$err='';$http=$retryHttp;$model=$backup;}
+      else{$raw=$retry;$err=$retryErr;$http=$retryHttp;}
+    }
     if($err||$http<200||$http>=300)return ['ok'=>false,'mode'=>'gemini','answer'=>$this->fallback($q),'http'=>$http,'error'=>$err?:$raw];
     $j=json_decode($raw,true);$a='';foreach(($j['candidates'][0]['content']['parts']??[]) as $part)if(isset($part['text']))$a.=$part['text'];
     if(!$a)return ['ok'=>false,'mode'=>'gemini','answer'=>$this->fallback($q),'http'=>$http,'error'=>'Resposta vazia'];
