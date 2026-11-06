@@ -188,12 +188,36 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   $h.='<div class=stack-layout><form method=post enctype="multipart/form-data" class="card room-edit-form">'.Csrf::field().'<input type=hidden name=action value=save><input type=hidden name=id value="'.U::e($x['id']).'">'.($edit?'':'<h2>Nova unidade</h2>').'<div class=grid2>'.row('Código interno','code',$x['code']).row('Nome público','name',$x['name']).'<label>Tipo de quarto<select name=type><option value="">Selecione</option>';foreach(['Suíte','Apartamento','Quarto duplo','Quarto triplo','Quarto família','Chalé','Cabana','Dormitório'] as $op)$h.='<option '.($x['type']===$op?'selected':'').'>'.U::e($op).'</option>';$h.='</select></label><fieldset class="room-status-switch"><legend>Status operacional</legend><div class="room-status-options"><label><input type="radio" name="status" value="active" '.($x['status']==='active'?'checked':'').'><span>Ligado</span></label><label><input type="radio" name="status" value="inactive" '.($x['status']==='inactive'?'checked':'').'><span>Desligado</span></label><label><input type="radio" name="status" value="maintenance" '.($x['status']==='maintenance'?'checked':'').'><span>Manutenção</span></label></div></fieldset></div>'.row('Descrição curta','short_description',$x['short_description'],'textarea').row('Descrição completa','description',$x['description'],'textarea').'<div class=grid3>'.row('Capacidade máxima','capacity',$x['capacity'],'number').row('Adultos','adults',$x['adults'],'number').row('Crianças','children',$x['children'],'number')."</div><h3>Camas</h3><div class=grid3>";
   foreach(['casal'=>'Casal','queen'=>'Queen','king'=>'King','solteiro'=>'Solteiro','solteiro_xl'=>'Solteiro XL','beliche'=>'Beliche','sofa_cama'=>'Sofá-cama','dobravel'=>'Dobrável','murphy'=>'Murphy'] as $b=>$lab)$h.=row($lab,"bed_$b",$beds[$b]??0,'number');
   $h.="</div><div class=grid3><label>Banheiro<select name=bathroom_type><option value=\"\">Selecione</option><option ".($x['bathroom_type']==='Privativo'?'selected':'').">Privativo</option><option ".($x['bathroom_type']==='Compartilhado'?'selected':'').">Compartilhado</option><option ".($x['bathroom_type']==='Adaptado'?'selected':'').">Adaptado</option></select></label>".row('Andar','floor_name',$x['floor_name']).row('Localização interna','internal_location',$x['internal_location']).row('Vista','view_name',$x['view_name']).row('Área m²','area_m2',$x['area_m2'],'number')."</div>".row('Varanda','balcony',$x['balcony'],'checkbox').row('Regras específicas','rules',$x['rules'],'textarea');
+  if(!$edit){
   $h.='<section class="form-section media-section"><h3>Fotos e vídeo da unidade</h3><p class=muted>Imagens JPG/PNG/WebP; vídeos MP4/WebM. O limite efetivo também depende do PHP do servidor.</p><div class=grid2><label>Foto principal<input type=file name=cover_image accept="image/jpeg,image/png,image/webp"></label><label>Fotos da galeria<input type=file name="gallery_images[]" accept="image/jpeg,image/png,image/webp" multiple></label><label>Upload de vídeo<input type=file name=video_file accept="video/mp4,video/webm"></label>'.row('Ou URL externa de vídeo','video_url',$x['video_url']).row('Legenda das novas fotos','gallery_caption').row('Texto alternativo','gallery_alt').'</div><div class=media-previews>'.mediaPreview($x['cover_image']).mediaPreview($x['video_path'],'video').'</div>';
   if($media){$h.='<div class=gallery>';foreach($media as $m){$src=$m['file_path']?:$m['url'];if(!$src)continue;$h.='<figure><img src="'.U::e(safeUrl($src)).'" alt="'.U::e($m['alt_text']).'"><figcaption>'.U::e($m['caption']).'</figcaption></figure>';}$h.='</div>';}
-  $h.='</section><h3>Preços</h3><div class=grid3>'.row('Diária-base','base_price',$x['base_price'],'number').row('Hóspede extra','extra_guest_fee',$x['extra_guest_fee'],'number').row('Taxa de limpeza','cleaning_fee',$x['cleaning_fee'],'number').row('Noites mínimas','min_nights',$x['min_nights'],'number').row('Noites máximas','max_nights',$x['max_nights'],'number').'</div><h3>Comodidades</h3><div class=amenities>';
+  $h.='</section>';
+  }
+  $h.='<h3>Preços</h3><div class=grid3>'.row('Diária-base','base_price',$x['base_price'],'number').row('Hóspede extra','extra_guest_fee',$x['extra_guest_fee'],'number').row('Taxa de limpeza','cleaning_fee',$x['cleaning_fee'],'number').row('Noites mínimas','min_nights',$x['min_nights'],'number').row('Noites máximas','max_nights',$x['max_nights'],'number').'</div><h3>Comodidades</h3><div class=amenities>';
   $cat='';foreach($ams as $a){if($cat!==$a['category']){$cat=$a['category'];$h.='<h4>'.U::e($cat).'</h4>';}$h.='<label class=check><input type=checkbox name="amenities[]" value="'.$a['id'].'" '.(in_array($a['id'],$selected)?'checked':'').'> '.U::e($a['name']).'</label>';}
-  $h.='</div>'.row('Publicar esta unidade','active',$x['active'],'checkbox').'<div class="form-actions"><button type="submit">'.($edit?'Salvar alterações':'Adicionar unidade').'</button><a class="btn secondary" href="index.php?p=rooms">Cancelar</a></div></form>';
-  if($edit)$h.='<form method="post" class="card danger-zone" onsubmit="return confirm(\'Excluir esta unidade? Reservas históricas serão preservadas.\')">'.Csrf::field().'<input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="'.(int)$edit['id'].'"><h3>Excluir unidade</h3><p class="muted">A unidade deixará de aparecer no cadastro e no site. Reservas históricas serão preservadas.</p><button class="danger" type="submit">Excluir unidade</button></form>';
+  $h.='</div>'.row('Publicar esta unidade','active',$x['active'],'checkbox').'<div class="form-actions"><button type="submit">'.($edit?'Salvar alterações':'Adicionar unidade').'</button>'.($edit?'<button type="button" class="btn secondary" data-room-close>Cancelar</button>':'<a class="btn secondary" href="index.php?p=rooms">Cancelar</a>').'</div></form>';
+  if($edit){
+    $h.='</div></dialog>';
+    $h.='<dialog id="roomPhotosDialog" class="room-admin-dialog room-photo-dialog" aria-labelledby="roomPhotosTitle">'
+      .'<div class="room-dialog-head"><h2 id="roomPhotosTitle">Fotos e vídeos · '.U::e($edit['name']).'</h2><button type="button" data-room-close aria-label="Fechar">×</button></div>'
+      .'<form method="post" enctype="multipart/form-data" class="room-media-form">'
+      .Csrf::field().'<input type="hidden" name="action" value="room_media_add"><input type="hidden" name="id" value="'.(int)$edit['id'].'">'
+      .'<div class="grid2"><label>Foto principal<input type="file" name="cover_image" accept="image/jpeg,image/png,image/webp"></label>'
+      .'<label>Adicionar fotos à galeria<input type="file" name="gallery_images[]" accept="image/jpeg,image/png,image/webp" multiple></label>'
+      .'<label>Adicionar vídeo<input type="file" name="video_file" accept="video/mp4,video/webm"></label>'
+      .row('URL do vídeo (HTTPS)','video_url',$x['video_url'])
+      .row('Legenda das novas fotos','gallery_caption')
+      .row('Texto alternativo','gallery_alt')
+      .'</div><div class="room-dialog-actions"><button type="button" class="btn" data-room-close>Cancelar</button><button type="submit">Salvar mídias</button></div></form>'
+      .'<div class="room-current-media"><h3>Fotos cadastradas</h3>';
+    if($x['cover_image'])$h.='<figure><img src="'.U::e(safeUrl($x['cover_image'])).'" alt="Capa atual"><figcaption>Capa atual</figcaption></figure>';
+    foreach($media as $m){
+      $src=safeUrl($m['file_path']?:$m['url']);if(!$src)continue;
+      $h.='<figure><img src="'.U::e($src).'" alt="'.U::e($m['alt_text']).'" loading="lazy"><figcaption>'.U::e($m['caption']?:'Foto da unidade').'</figcaption></figure>';
+    }
+    $h.='</div></dialog>';
+  }
+
   if($edit){
     $rid=(int)$edit['id'];
     $section=(string)($_GET['section']??'');
