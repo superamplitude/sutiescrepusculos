@@ -101,12 +101,15 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   $beds=json_decode($x['beds_json']?:'{}',true)?:[];$media=[];
   if($edit){$q=$pdo->prepare("SELECT * FROM media WHERE scope='room' AND entity_id=? ORDER BY id DESC");$q->execute([$edit['id']]);$media=$q->fetchAll();}
   if($view==='list'){
+    $galleryCovers=[];
+    $q=$pdo->query("SELECT entity_id,file_path,url FROM media WHERE scope='room' AND type='image' ORDER BY is_cover DESC,id ASC");
+    foreach($q->fetchAll() as $image){$roomKey=(int)$image['entity_id'];if(!isset($galleryCovers[$roomKey]))$galleryCovers[$roomKey]=(string)($image['file_path']?:$image['url']);}
     $h='<div class="module-actions rooms-list-actions"><a class="btn" href="index.php?p=rooms&view=new">+ Adicionar unidade</a></div>';
     $h.='<div class="card rooms-list-card"><div class="rooms-table-scroll"><table class="rooms-list-table"><thead><tr><th>Foto</th><th>Nome</th><th>Status</th><th>Capacidade</th><th>Diária</th><th>Tarifas / Pacotes</th><th>Ações</th></tr></thead><tbody>';
     foreach($rooms as $r){
       $rid=(int)$r['id'];
       $editUrl='index.php?p=rooms&view=edit&id='.$rid;
-      $photo=trim((string)($r['cover_image']??''));
+      $photo=trim((string)($r['cover_image']?:($galleryCovers[$rid]??'')));
       $photoHtml=$photo!==''
         ?'<img src="'.U::e(safeUrl($photo)).'" loading="lazy" alt="Foto de '.U::e($r['name']).'">'
         :'<span class="room-photo-empty" aria-label="Sem foto">Sem foto</span>';
@@ -123,8 +126,9 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
     $h.='</tbody></table></div></div>';
     render('Quartos / Unidades',$h);exit;
   }
-  $h=adminTitle($edit?'Editar unidade':'Nova unidade',$edit?'Altere os dados desta acomodação.':'Cadastre uma nova acomodação.');
+  $h='';
   $h.='<div class="module-actions"><a class="btn secondary" href="index.php?p=rooms">← Voltar para unidades</a></div>';
+  if($edit)$h.='<nav class="room-jump-nav"><a href="index.php?p=rooms&view=edit&id='.(int)$edit['id'].'&section=diaria#room-pricing">Diária</a><a href="index.php?p=rooms&view=edit&id='.(int)$edit['id'].'&section=pacote#room-pricing">Pacote</a></nav>';
   $h.='<div class=stack-layout><form method=post enctype="multipart/form-data" class=card>'.Csrf::field().'<input type=hidden name=action value=save><input type=hidden name=id value="'.U::e($x['id']).'"><h2>'.($edit?'Editar unidade':'Nova unidade').'</h2><div class=grid2>'.row('Código interno','code',$x['code']).row('Nome público','name',$x['name']).'<label>Tipo de quarto<select name=type><option value="">Selecione</option>';foreach(['Suíte','Apartamento','Quarto duplo','Quarto triplo','Quarto família','Chalé','Cabana','Dormitório'] as $op)$h.='<option '.($x['type']===$op?'selected':'').'>'.U::e($op).'</option>';$h.='</select></label><label>Status operacional<select name=status><option value=inactive '.($x['status']==='inactive'?'selected':'').'>Inativo</option><option value=active '.($x['status']==='active'?'selected':'').'>Ativo</option><option value=maintenance '.($x['status']==='maintenance'?'selected':'').'>Manutenção</option></select></label></div>'.row('Descrição curta','short_description',$x['short_description'],'textarea').row('Descrição completa','description',$x['description'],'textarea').'<div class=grid3>'.row('Capacidade máxima','capacity',$x['capacity'],'number').row('Adultos','adults',$x['adults'],'number').row('Crianças','children',$x['children'],'number')."</div><h3>Camas</h3><div class=grid3>";
   foreach(['casal'=>'Casal','queen'=>'Queen','king'=>'King','solteiro'=>'Solteiro','solteiro_xl'=>'Solteiro XL','beliche'=>'Beliche','sofa_cama'=>'Sofá-cama','dobravel'=>'Dobrável','murphy'=>'Murphy'] as $b=>$lab)$h.=row($lab,"bed_$b",$beds[$b]??0,'number');
   $h.="</div><div class=grid3><label>Banheiro<select name=bathroom_type><option value=\"\">Selecione</option><option ".($x['bathroom_type']==='Privativo'?'selected':'').">Privativo</option><option ".($x['bathroom_type']==='Compartilhado'?'selected':'').">Compartilhado</option><option ".($x['bathroom_type']==='Adaptado'?'selected':'').">Adaptado</option></select></label>".row('Andar','floor_name',$x['floor_name']).row('Localização interna','internal_location',$x['internal_location']).row('Vista','view_name',$x['view_name']).row('Área m²','area_m2',$x['area_m2'],'number')."</div>".row('Varanda','balcony',$x['balcony'],'checkbox').row('Regras específicas','rules',$x['rules'],'textarea');
@@ -145,7 +149,7 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
       $h.='<form method="post" class="rooms-pricing-form">'.Csrf::field().'<input type="hidden" name="action" value="tariff_add"><input type="hidden" name="room_id" value="'.$rid.'"><div class="grid3">'
         .row('Nome da tarifa','name')
         .row('Início','start_date','','date').row('Fim','end_date','','date')
-        .row('Valor da diária','price','','number').row('Noites mínimas','min_nights',1,'number').row('Prioridade','priority',0,'number')
+        .'<label>Valor da diária (R$)<input type="number" name="price" min="0" step="0.01" required></label>'.row('Noites mínimas','min_nights',1,'number').row('Prioridade','priority',0,'number')
         .'</div><button type="submit">Adicionar diária</button></form>';
       $h.='<div class="rooms-pricing-table"><table><thead><tr><th>Tarifa</th><th>Período</th><th>Valor</th><th>Noites mín.</th><th>Status</th><th></th></tr></thead><tbody>';
       foreach($list as $rate){
@@ -156,10 +160,10 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
     }elseif($section==='pacote'){
       $q=$pdo->prepare("SELECT id,name,description,start_date,end_date,nights,price,active FROM room_packages WHERE room_id=? ORDER BY start_date DESC,id DESC");
       $q->execute([$rid]);$list=$q->fetchAll();
-      $h.='<h3>Pacotes desta unidade</h3><p class="muted">Cadastre pacotes por período e quantidade de noites. A diária-base não será alterada.</p>';
+      $h.='<h3>Pacotes desta unidade</h3><p class="muted">Cadastre pacotes por período e quantidade de noites. Os pacotes são ofertas para consulta e negociação; o cálculo automático de reservas continua pelas diárias e tarifas.</p>';
       $h.='<form method="post" class="rooms-pricing-form">'.Csrf::field().'<input type="hidden" name="action" value="package_add"><input type="hidden" name="room_id" value="'.$rid.'"><div class="grid3">'
         .row('Nome do pacote','name').row('Início','start_date','','date').row('Fim','end_date','','date')
-        .row('Noites do pacote','nights',2,'number').row('Preço total do pacote','price','','number')
+        .row('Noites do pacote','nights',2,'number').'<label>Preço total do pacote (R$)<input type="number" name="price" min="0" step="0.01" required></label>'
         .'</div>'.row('O que inclui','description','','textarea').'<button type="submit">Adicionar pacote</button></form>';
       $h.='<div class="rooms-pricing-table"><table><thead><tr><th>Pacote</th><th>Período</th><th>Noites</th><th>Preço total</th><th>Status</th><th></th></tr></thead><tbody>';
       foreach($list as $package){
