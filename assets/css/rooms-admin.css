@@ -145,3 +145,14 @@
 @media(max-width:690px){
  .admin-mode .room-actions-toolbar .room-section-button{flex:0 0 auto!important;min-height:40px!important}
 }
+
+/* Dialog buttons are real links as a fallback when scripts are blocked. */
+.admin-mode .room-dialog-head a[data-room-close]{
+  box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
+  width:34px;height:34px;line-height:1;text-decoration:none;font-weight:600;
+}
+.admin-mode .room-dialog-head a[data-room-close]:focus-visible,
+.admin-mode .room-actions-toolbar [data-room-open]:focus-visible{
+  outline:3px solid #ac540c;outline-offset:3px;
+}
+.admin-mode .room-actions-toolbar a[data-room-open]{cursor:pointer}
