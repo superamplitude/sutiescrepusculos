@@ -23,8 +23,19 @@
 .table-actions a.btn.secondary.small:hover{background:#218838!important}
 .table-actions .danger.small:hover,
 .table-actions button.danger.small:hover{background:#dc6508!important}
-</style><link rel="stylesheet" href="assets/css/app.css?v=<?=$cssV?>"><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='messages')): ?><link rel="stylesheet" href="assets/css/unified-inbox.css?v=20261106"><?php endif; ?><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='hero')): ?><link rel="stylesheet" href="assets/css/hero-admin.css?v=20261106-center"><?php endif; ?><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='gallery')): ?><link rel="stylesheet" href="assets/css/gallery-admin.css?v=20261106b"><?php endif; ?><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='rooms')): ?><link rel="stylesheet" href="assets/css/rooms-admin.css?v=20261106-amenities"><?php endif; ?><style>:root{--site-primary:<?=U::e(Site::color('primary_color','#0d756d'))?>;--site-secondary:<?=U::e(Site::color('secondary_color','#173f3b'))?>;--site-accent:<?=U::e(Site::color('accent_color','#bf8d39'))?>;--site-body-font:'<?=U::e(Site::font('body_font','Inter'))?>';--site-heading-font:'<?=U::e(Site::font('heading_font','Georgia'))?>';}</style><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='rooms')): ?><script defer src="assets/js/rooms-admin.js?v=20261106e"></script><?php endif; ?></head>
-<body class="<?=Auth::user()?'admin-mode':'public-mode '.U::e($siteLayout)?>">
+</style><link rel="stylesheet" href="assets/css/app.css?v=<?=$cssV?>"><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='messages')): ?><link rel="stylesheet" href="assets/css/unified-inbox.css?v=20261106"><?php endif; ?><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='hero')): ?><link rel="stylesheet" href="assets/css/hero-admin.css?v=20261106-center"><?php endif; ?><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='gallery')): ?><link rel="stylesheet" href="assets/css/gallery-admin.css?v=20261106b"><?php endif; ?><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='rooms')): ?><link rel="stylesheet" href="assets/css/rooms-admin.css?v=20261106-amenities"><?php endif; ?><style>:root{--site-primary:<?=U::e(Site::color('primary_color','#0d756d'))?>;--site-secondary:<?=U::e(Site::color('secondary_color','#173f3b'))?>;--site-accent:<?=U::e(Site::color('accent_color','#bf8d39'))?>;--site-body-font:'<?=U::e(Site::font('body_font','Inter'))?>';--site-heading-font:'<?=U::e(Site::font('heading_font','Georgia'))?>';}</style><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='rooms')): ?><script defer src="assets/js/rooms-admin.js?v=20261106e"></script><?php endif; ?><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='reservations')): ?><link rel="stylesheet" href="assets/css/reservations-overlay.css?v=20261106a"><script defer src="assets/js/reservations-overlay.js?v=20261106a"></script><?php endif; ?><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='reservation_edit') && (($_GET['embed']??'')==='1')): ?><style>
+body.reservation-embed{background:#fff!important;min-width:0!important}
+body.reservation-embed .admin-sidebar,body.reservation-embed .admin-topbar,body.reservation-embed .suites-voice-toggle,body.reservation-embed .suites-voice-panel{display:none!important}
+body.reservation-embed .admin-shell{margin-left:0!important;min-height:0!important;width:100%!important}
+body.reservation-embed .admin-main{margin:0!important;padding:14px!important;max-width:none!important;min-height:0!important}
+body.reservation-embed .reservation-edit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+body.reservation-embed .reservation-embed-header h2{font-size:17px;margin:0 0 5px}
+body.reservation-embed .reservation-embed-header p{font-size:12px;color:#6e827b;margin:0 0 13px}
+body.reservation-embed .card{margin-bottom:12px!important;padding:15px!important}
+body.reservation-embed .card h2{font-size:15px}
+@media(max-width:640px){body.reservation-embed .reservation-edit-grid{grid-template-columns:1fr}}
+</style><?php endif; ?></head>
+<body class="<?=Auth::user()?('admin-mode'.((($_GET['p']??'')==='reservation_edit'&&($_GET['embed']??'')==='1')?' reservation-embed':'')):'public-mode '.U::e($siteLayout)?>">
 <?php if(Auth::user()): ?>
 <aside class="admin-sidebar">
   <div class="admin-brand">
@@ -195,7 +206,7 @@
   </section>
 </div>
 <?php endif;?>
-<?php if(!Auth::user() && !empty($siteSettings['custom_css'])):?><style><?=str_replace('</style','<\/style',(string)$siteSettings['custom_css'])?></style><?php endif;?><?php $jsV=@filemtime(__DIR__.'/../../assets/js/app.js')?:time(); ?><script src="assets/js/app.js?v=<?=$jsV?>"></script><?php if(Auth::user()): if(empty($_SESSION['_panel_voice_greeting']))$_SESSION['_panel_voice_greeting']=bin2hex(random_bytes(8)); ?>
+<?php if(!Auth::user() && !empty($siteSettings['custom_css'])):?><style><?=str_replace('</style','<\/style',(string)$siteSettings['custom_css'])?></style><?php endif;?><?php $jsV=@filemtime(__DIR__.'/../../assets/js/app.js')?:time(); ?><script src="assets/js/app.js?v=<?=$jsV?>"></script><?php if(Auth::user() && !(($_GET['p']??'')==='reservation_edit' && ($_GET['embed']??'')==='1')): if(empty($_SESSION['_panel_voice_greeting']))$_SESSION['_panel_voice_greeting']=bin2hex(random_bytes(8)); ?>
 <link rel="stylesheet" href="assets/css/panel-voice.css?v=20261106c">
 <button type="button" id="suitesVoiceToggle" class="suites-voice-toggle" aria-expanded="false" aria-controls="suitesPanelVoice">💬 Falar com IA</button>
 <section id="suitesPanelVoice" class="suites-voice-panel" data-greeting="<?=U::e($_SESSION['_panel_voice_greeting'])?>" hidden aria-label="Chat e voz">
