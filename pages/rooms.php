@@ -15,6 +15,49 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   if($_SERVER['REQUEST_METHOD']==='POST'){
     Csrf::check();$upload=new UploadService();
     $id=(int)($_POST['id']??0);$action=$_POST['action']??'save';
+    if(in_array($action,['tariff_add','package_add','tariff_toggle','package_toggle'],true)){
+      Auth::requirePerm('prices.edit');
+      $rid=(int)($_POST['room_id']??0);
+      $q=$pdo->prepare("SELECT id FROM rooms WHERE id=? AND code NOT LIKE '__deleted__%' LIMIT 1");$q->execute([$rid]);
+      if(!$q->fetchColumn())throw new RuntimeException('Unidade não encontrada.');
+      $type=str_starts_with($action,'tariff_')?'diaria':'pacote';
+      $back='index.php?p=rooms&view=edit&id='.$rid.'&section='.$type;
+      if(in_array($action,['tariff_toggle','package_toggle'],true)){
+        $record=(int)($_POST['record_id']??0);
+        $table=$type==='diaria'?'tariffs':'room_packages';
+        $q=$pdo->prepare("UPDATE $table SET active=IF(active=1,0,1) WHERE id=? AND room_id=?");
+        $q->execute([$record,$rid]);
+        if($q->rowCount()!==1)throw new RuntimeException('Registro de tarifa/pacote não encontrado.');
+        Audit::log('room.'.$type.'.toggle','room',$rid,['record_id'=>$record]);
+        U::flash('ok','Status atualizado.');U::redirect($back);
+      }
+      $name=trim((string)($_POST['name']??''));
+      $start=(string)($_POST['start_date']??'');
+      $end=(string)($_POST['end_date']??'');
+      $d1=DateTimeImmutable::createFromFormat('!Y-m-d',$start);
+      $d2=DateTimeImmutable::createFromFormat('!Y-m-d',$end);
+      if(mb_strlen($name)<3||mb_strlen($name)>120||!$d1||!$d2||$d1->format('Y-m-d')!==$start||$d2->format('Y-m-d')!==$end||$start>$end)
+        throw new RuntimeException('Informe nome e período válidos.');
+      $price=filter_var($_POST['price']??null,FILTER_VALIDATE_FLOAT);
+      if($price===false||$price<0||$price>1000000)throw new RuntimeException('Informe um preço válido.');
+      if($type==='diaria'){
+        $nights=(int)($_POST['min_nights']??1);
+        if($nights<1||$nights>365)throw new RuntimeException('Mínimo de noites inválido.');
+        $priority=(int)($_POST['priority']??0);
+        if($priority<0||$priority>10000)throw new RuntimeException('Prioridade inválida.');
+        $q=$pdo->prepare('INSERT INTO tariffs(room_id,name,start_date,end_date,price,min_nights,priority,active) VALUES(?,?,?,?,?,?,?,1)');
+        $q->execute([$rid,$name,$start,$end,$price,$nights,$priority]);
+      }else{
+        $nights=(int)($_POST['nights']??0);
+        if($nights<1||$nights>365)throw new RuntimeException('Quantidade de noites inválida.');
+        $description=mb_substr(trim((string)($_POST['description']??'')),0,3000);
+        $q=$pdo->prepare('INSERT INTO room_packages(room_id,name,description,start_date,end_date,nights,price,active,created_at) VALUES(?,?,?,?,?,?,?,1,NOW())');
+        $q->execute([$rid,$name,$description,$start,$end,$nights,$price]);
+      }
+      Audit::log('room.'.$type.'.add','room',$rid,['record_id'=>(int)$pdo->lastInsertId()]);
+      U::flash('ok',$type==='diaria'?'Diária cadastrada para esta unidade.':'Pacote cadastrado para esta unidade.');
+      U::redirect($back);
+    }
     if($action==='delete'){
       if($id<1)throw new RuntimeException('Unidade inválida para exclusão.');
       $q=$pdo->prepare("SELECT id,code,name FROM rooms WHERE id=? AND code NOT LIKE '__deleted__%'");$q->execute([$id]);$room=$q->fetch();
@@ -58,14 +101,27 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   $beds=json_decode($x['beds_json']?:'{}',true)?:[];$media=[];
   if($edit){$q=$pdo->prepare("SELECT * FROM media WHERE scope='room' AND entity_id=? ORDER BY id DESC");$q->execute([$edit['id']]);$media=$q->fetchAll();}
   if($view==='list'){
-    $h=adminTitle('Quartos / Unidades','Gerencie as acomodações cadastradas.');
-    $h.='<div class="module-actions"><a class="btn" href="index.php?p=rooms&view=new">+ Adicionar unidade</a></div>';
-    $h.='<div class=card><h2>Unidades cadastradas</h2><table><tr><th>Código</th><th>Nome</th><th>Status</th><th>Capacidade</th><th>Diária</th><th>Ações</th></tr>';
+    $h='<div class="module-actions rooms-list-actions"><a class="btn" href="index.php?p=rooms&view=new">+ Adicionar unidade</a></div>';
+    $h.='<div class="card rooms-list-card"><div class="rooms-table-scroll"><table class="rooms-list-table"><thead><tr><th>Foto</th><th>Nome</th><th>Status</th><th>Capacidade</th><th>Diária</th><th>Tarifas / Pacotes</th><th>Ações</th></tr></thead><tbody>';
     foreach($rooms as $r){
       $rid=(int)$r['id'];
-      $h.='<tr><td>'.U::e($r['code']).'</td><td>'.U::e($r['name']).'</td><td>'.U::e(statusPt($r['status'])).'</td><td>'.(int)$r['capacity'].'</td><td>'.money((float)$r['base_price']).'</td><td><div class="table-actions"><a class="btn secondary small" href="index.php?p=rooms&view=edit&id='.$rid.'">Editar</a><form method="post" class="inline-form" onsubmit="return confirm(\'Excluir esta unidade? Reservas históricas serão preservadas.\')">'.Csrf::field().'<input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="'.$rid.'"><button class="danger small" type="submit">Excluir</button></form></div></td></tr>';
+      $editUrl='index.php?p=rooms&view=edit&id='.$rid;
+      $photo=trim((string)($r['cover_image']??''));
+      $photoHtml=$photo!==''
+        ?'<img src="'.U::e(safeUrl($photo)).'" loading="lazy" alt="Foto de '.U::e($r['name']).'">'
+        :'<span class="room-photo-empty" aria-label="Sem foto">Sem foto</span>';
+      $h.='<tr><td><a class="room-photo-link" href="'.$editUrl.'">'.$photoHtml.'</a></td>'
+        .'<td><a class="room-name-link" href="'.$editUrl.'">'.U::e($r['name']).'</a><small>'.U::e($r['code']).'</small></td>'
+        .'<td>'.U::e(statusPt($r['status'])).'</td><td>'.(int)$r['capacity'].'</td>'
+        .'<td>'.money((float)$r['base_price']).'</td>'
+        .'<td><div class="room-price-actions"><a class="btn secondary small" href="'.$editUrl.'&section=diaria">Diária</a><a class="btn secondary small" href="'.$editUrl.'&section=pacote">Pacote</a></div></td>'
+        .'<td><div class="table-actions"><a class="btn secondary small" href="'.$editUrl.'">Editar</a>'
+        .'<form method="post" class="inline-form" onsubmit="return confirm(\'Excluir esta unidade? Reservas históricas serão preservadas.\')">'
+        .Csrf::field().'<input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="'.$rid.'">'
+        .'<button class="danger small" type="submit">Excluir</button></form></div></td></tr>';
     }
-    $h.='</table></div>';render('Quartos / Unidades',$h);exit;
+    $h.='</tbody></table></div></div>';
+    render('Quartos / Unidades',$h);exit;
   }
   $h=adminTitle($edit?'Editar unidade':'Nova unidade',$edit?'Altere os dados desta acomodação.':'Cadastre uma nova acomodação.');
   $h.='<div class="module-actions"><a class="btn secondary" href="index.php?p=rooms">← Voltar para unidades</a></div>';
@@ -78,4 +134,42 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   $cat='';foreach($ams as $a){if($cat!==$a['category']){$cat=$a['category'];$h.='<h4>'.U::e($cat).'</h4>';}$h.='<label class=check><input type=checkbox name="amenities[]" value="'.$a['id'].'" '.(in_array($a['id'],$selected)?'checked':'').'> '.U::e($a['name']).'</label>';}
   $h.='</div>'.row('Publicar esta unidade','active',$x['active'],'checkbox').'<div class="form-actions"><button type="submit">'.($edit?'Salvar alterações':'Adicionar unidade').'</button><a class="btn secondary" href="index.php?p=rooms">Cancelar</a></div></form>';
   if($edit)$h.='<form method="post" class="card danger-zone" onsubmit="return confirm(\'Excluir esta unidade? Reservas históricas serão preservadas.\')">'.Csrf::field().'<input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="'.(int)$edit['id'].'"><h3>Excluir unidade</h3><p class="muted">A unidade deixará de aparecer no cadastro e no site. Reservas históricas serão preservadas.</p><button class="danger" type="submit">Excluir unidade</button></form>';
+  if($edit){
+    $rid=(int)$edit['id'];
+    $section=(string)($_GET['section']??'');
+    $h.='<section class="card rooms-pricing-card" id="room-pricing"><div class="room-pricing-head"><div><h2>Diárias e pacotes</h2><p class="muted">Valores e ofertas desta unidade: '.U::e($edit['name']).'.</p></div><div class="room-pricing-tabs"><a href="index.php?p=rooms&view=edit&id='.$rid.'&section=diaria#room-pricing" class="'.($section==='diaria'?'current':'').'">Diária</a><a href="index.php?p=rooms&view=edit&id='.$rid.'&section=pacote#room-pricing" class="'.($section==='pacote'?'current':'').'">Pacote</a></div></div>';
+    if($section==='diaria'){
+      $q=$pdo->prepare("SELECT id,name,start_date,end_date,price,min_nights,priority,active FROM tariffs WHERE room_id=? ORDER BY start_date DESC,id DESC");
+      $q->execute([$rid]);$list=$q->fetchAll();
+      $h.='<h3>Tarifas desta unidade</h3><p class="muted">Cadastre valores por período, incluindo alta e baixa temporada. A diária-base permanece no cadastro acima.</p>';
+      $h.='<form method="post" class="rooms-pricing-form">'.Csrf::field().'<input type="hidden" name="action" value="tariff_add"><input type="hidden" name="room_id" value="'.$rid.'"><div class="grid3">'
+        .row('Nome da tarifa','name')
+        .row('Início','start_date','','date').row('Fim','end_date','','date')
+        .row('Valor da diária','price','','number').row('Noites mínimas','min_nights',1,'number').row('Prioridade','priority',0,'number')
+        .'</div><button type="submit">Adicionar diária</button></form>';
+      $h.='<div class="rooms-pricing-table"><table><thead><tr><th>Tarifa</th><th>Período</th><th>Valor</th><th>Noites mín.</th><th>Status</th><th></th></tr></thead><tbody>';
+      foreach($list as $rate){
+        $h.='<tr><td>'.U::e($rate['name']).'</td><td>'.U::e($rate['start_date']).' – '.U::e($rate['end_date']).'</td><td>'.money((float)$rate['price']).'</td><td>'.(int)$rate['min_nights'].'</td><td>'.((int)$rate['active']?'Ativa':'Inativa').'</td><td><form method="post">'.Csrf::field().'<input type="hidden" name="action" value="tariff_toggle"><input type="hidden" name="room_id" value="'.$rid.'"><input type="hidden" name="record_id" value="'.(int)$rate['id'].'"><button type="submit" class="btn secondary small">'.((int)$rate['active']?'Desativar':'Ativar').'</button></form></td></tr>';
+      }
+      if(!$list)$h.='<tr><td colspan="6">Nenhuma tarifa por período cadastrada.</td></tr>';
+      $h.='</tbody></table></div>';
+    }elseif($section==='pacote'){
+      $q=$pdo->prepare("SELECT id,name,description,start_date,end_date,nights,price,active FROM room_packages WHERE room_id=? ORDER BY start_date DESC,id DESC");
+      $q->execute([$rid]);$list=$q->fetchAll();
+      $h.='<h3>Pacotes desta unidade</h3><p class="muted">Cadastre pacotes por período e quantidade de noites. A diária-base não será alterada.</p>';
+      $h.='<form method="post" class="rooms-pricing-form">'.Csrf::field().'<input type="hidden" name="action" value="package_add"><input type="hidden" name="room_id" value="'.$rid.'"><div class="grid3">'
+        .row('Nome do pacote','name').row('Início','start_date','','date').row('Fim','end_date','','date')
+        .row('Noites do pacote','nights',2,'number').row('Preço total do pacote','price','','number')
+        .'</div>'.row('O que inclui','description','','textarea').'<button type="submit">Adicionar pacote</button></form>';
+      $h.='<div class="rooms-pricing-table"><table><thead><tr><th>Pacote</th><th>Período</th><th>Noites</th><th>Preço total</th><th>Status</th><th></th></tr></thead><tbody>';
+      foreach($list as $package){
+        $h.='<tr><td><b>'.U::e($package['name']).'</b><small>'.U::e($package['description']).'</small></td><td>'.U::e($package['start_date']).' – '.U::e($package['end_date']).'</td><td>'.(int)$package['nights'].'</td><td>'.money((float)$package['price']).'</td><td>'.((int)$package['active']?'Ativo':'Inativo').'</td><td><form method="post">'.Csrf::field().'<input type="hidden" name="action" value="package_toggle"><input type="hidden" name="room_id" value="'.$rid.'"><input type="hidden" name="record_id" value="'.(int)$package['id'].'"><button type="submit" class="btn secondary small">'.((int)$package['active']?'Desativar':'Ativar').'</button></form></td></tr>';
+      }
+      if(!$list)$h.='<tr><td colspan="6">Nenhum pacote cadastrado para esta unidade.</td></tr>';
+      $h.='</tbody></table></div>';
+    }else{
+      $h.='<p class="muted">Selecione Diária ou Pacote para gerenciar os valores específicos desta unidade.</p>';
+    }
+    $h.='</section>';
+  }
   $h.='</div>';render($edit?'Editar unidade':'Nova unidade',$h);exit;
