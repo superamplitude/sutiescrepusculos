@@ -40,7 +40,10 @@
   try{
    const response=await post('answer',text,controller.signal),data=await response.json();
    if(!data.ok||typeof data.answer!=='string'||!data.answer.trim())throw new Error(data.error||'O atendimento não retornou uma resposta.');
-   answer.textContent=data.answer;
+   const entry=document.createElement('div');entry.className='suites-chat-turn';
+   const user=document.createElement('p'),reply=document.createElement('p');
+   user.textContent='Você: '+text;reply.textContent='Assistente: '+data.answer;
+   entry.append(user,reply);answer.append(entry);answer.scrollTop=answer.scrollHeight;
    void speak(data.answer);
   }catch(error){sayStatus(error.name==='AbortError'?'O atendimento demorou para responder. Tente novamente.':error.message);}
   finally{clearTimeout(timer);answerBusy=false;sendButton.disabled=false;question.removeAttribute('aria-busy');}
