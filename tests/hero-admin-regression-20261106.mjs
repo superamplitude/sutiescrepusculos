@@ -25,6 +25,13 @@ try{
   assert(!await page.locator('#add').evaluate(el=>el.open),'add dialog not closed');
   await page.locator('[data-hero-open="edit3"]').click();
   assert(await page.locator('#edit3').evaluate(el=>el.open),'edit dialog not opened');
+  const centered=await page.locator('#edit3').boundingBox();
+  const viewport=page.viewportSize();
+  assert(Math.abs((centered.x+centered.width/2)-viewport.width/2)<3,'desktop modal not horizontally centered');
+  assert(Math.abs((centered.y+centered.height/2)-viewport.height/2)<3,'desktop modal not vertically centered');
+  assert(centered.width<=525,'desktop modal too wide');
+  assert(centered.height<=625,'desktop modal too tall');
+
   await page.locator('#edit3 input[name="caption"]').fill('Atualização de legenda');
   assert.equal(await page.locator('#edit3 input[name="caption"]').inputValue(),'Atualização de legenda');
   await page.keyboard.press('Escape');
@@ -32,6 +39,14 @@ try{
   await page.setViewportSize({width:430,height:800});
   const smallColumns=await page.locator('.hero-admin-grid').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length);
   assert.equal(smallColumns,2,'mobile grid should have two thumbnails per line');
+  await page.locator('[data-hero-open="edit3"]').click();
+  const mobileDialog=await page.locator('#edit3').boundingBox();
+  const mobileView=page.viewportSize();
+  assert(Math.abs((mobileDialog.x+mobileDialog.width/2)-mobileView.width/2)<3,'mobile dialog not horizontally centered');
+  assert(Math.abs((mobileDialog.y+mobileDialog.height/2)-mobileView.height/2)<3,'mobile dialog not vertically centered');
+  assert(mobileDialog.x>=0&&mobileDialog.x+mobileDialog.width<=mobileView.width,'mobile dialog overflow');
+  assert(mobileDialog.y>=0&&mobileDialog.y+mobileDialog.height<=mobileView.height,'mobile vertical overflow');
+  await page.keyboard.press('Escape');
   assert.deepEqual(errors,[]);
-  console.log('HERO_UI_QA_OK: 6 desktop columns, 2 mobile columns, add/edit dialogs, close, Escape, input and no JS errors');
+  console.log('HERO_UI_CENTER_OK: desktop and mobile centered, compact width/height, 6 desktop and 2 mobile columns, add/edit dialogs, Escape, zero JS errors');
 }finally{await browser.close();}
