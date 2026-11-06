@@ -1,0 +1,38 @@
+/* Quarto por unidade: apenas a página de quartos utiliza estas regras. */
+.rooms-list-actions{display:flex;align-items:center;gap:10px;margin:0 0 48px!important}
+.rooms-list-actions .btn{min-height:40px}
+.rooms-list-card{padding:18px!important;min-width:0}
+.rooms-table-scroll{overflow-x:auto;width:100%}
+.rooms-list-table{width:100%;table-layout:auto;min-width:790px;border-collapse:collapse}
+.rooms-list-table th{font-size:11px;text-transform:uppercase;color:#657e74;white-space:nowrap}
+.rooms-list-table th,.rooms-list-table td{padding:10px 8px;vertical-align:middle}
+.rooms-list-table td{font-size:12px}
+.rooms-list-table td:nth-child(2){min-width:155px}
+.rooms-list-table td:nth-child(6){min-width:160px}
+.room-photo-link{display:block;width:78px;height:60px;border-radius:7px;overflow:hidden;background:#e9f0eb;border:1px solid #bdd0c5}
+.room-photo-link img{width:100%;height:100%;object-fit:cover}
+.room-photo-empty{height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#71857b}
+.room-name-link{font-weight:700;font-size:13px;color:#115b50;text-decoration:none}
+.rooms-list-table td:nth-child(2) small{display:block;font-size:10px;color:#7a8d82;margin-top:4px}
+.room-price-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.room-price-actions a{font-size:11px!important;min-width:58px!important;padding:8px!important;white-space:nowrap}
+.rooms-list-table .table-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.rooms-list-table .table-actions .btn,.rooms-list-table .table-actions button{font-size:11px!important;min-width:58px!important;padding:8px!important}
+.rooms-pricing-card{margin-top:18px}
+.room-pricing-head{display:flex;justify-content:space-between;gap:15px;align-items:center;flex-wrap:wrap}
+.room-pricing-head h2{font-size:19px;margin:0 0 4px}
+.room-pricing-head p{margin:0}
+.room-pricing-tabs{display:flex;align-items:center;gap:8px}
+.room-pricing-tabs a{border:1px solid #b9d0c5;border-radius:8px;padding:9px 14px;color:#145848;background:#fff;font-weight:600}
+.room-pricing-tabs a.current{background:#0b877a;border-color:#0b877a;color:#fff}
+.rooms-pricing-form{border:1px solid #e0ebe6;border-radius:9px;padding:14px;margin:12px 0 20px}
+.rooms-pricing-form .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.rooms-pricing-form label{min-width:0}
+.rooms-pricing-form input{max-width:100%;min-width:0}
+.rooms-pricing-form button{margin-top:10px}
+.rooms-pricing-table{overflow-x:auto}
+.rooms-pricing-table table{min-width:650px}
+.rooms-pricing-table td small{display:block;margin-top:4px;color:#73857a}
+.rooms-pricing-table form{margin:0}
+@media(max-width:850px){.rooms-pricing-form .grid3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.rooms-list-actions{margin-bottom:40px!important}.rooms-pricing-form .grid3{grid-template-columns:1fr}.room-pricing-head{align-items:flex-start}}
