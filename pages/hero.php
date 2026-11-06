@@ -132,37 +132,67 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
     }
   }
 
-  if(!isset($media))$media=$pdo->query("SELECT * FROM media WHERE scope='property' AND entity_id=1 ORDER BY is_cover DESC,sort_order,id")->fetchAll();
-  $h=adminTitle('Editor do Hero','Adicione, ordene, ligue/desligue e defina a mídia principal da capa.');
-  if($media=$pdo->query("SELECT * FROM media WHERE scope='property' AND entity_id=1 ORDER BY is_cover DESC,sort_order,id")->fetchAll()){
-    $h.='<form method=post class="hero-clear-form" onsubmit="return confirm(\'Remover TODAS as mídias do hero?\')">'.Csrf::field().'<input type=hidden name=action value=clear_all><button class="danger">Excluir todas as mídias do Hero</button></form>';
-  }
-
-  $h.='<form method=post enctype="multipart/form-data" class="card hero-upload-card">'.Csrf::field().'<input type=hidden name=action value=upload>
-    <div class=card-head><div><h2>Adicionar mídias</h2><p>Você pode enviar várias fotos de uma vez e também vídeo.</p></div></div>
-    <div class=grid2>
-      <label>Fotos do hero<input type=file name="hero_images[]" accept="image/jpeg,image/png,image/webp" multiple></label>
-      <label>Vídeo do hero<input type=file name=hero_video_file accept="video/mp4,video/webm"></label>
-      '.row('Ou URL direta do vídeo','video_url').row('Legenda padrão','caption').row('Texto alternativo','alt_text').row('Ordem inicial','sort_order',0,'number').'
-    </div><button>Adicionar ao hero</button></form>';
-
-  $h.='<div class="hero-admin-grid">';
-  if(!$media)$h.='<div class="card empty-state"><h3>Nenhuma mídia no hero</h3><p>Envie fotos ou vídeo usando o formulário acima.</p></div>';
-  foreach($media as $m){
-    $src=safeUrl($m['file_path']?:$m['url']);
-    $preview=$m['type']==='video'
-      ? '<video controls preload=metadata src="'.U::e($src).'"></video>'
-      : '<img src="'.U::e($src).'" alt="'.U::e($m['alt_text']).'">';
-
-    $h.='<article class="card hero-media-card '.($m['is_cover']?'is-cover':'').'">
-      <div class=hero-media-preview>'.$preview.($m['is_cover']?'<span class=cover-badge>CAPA PRINCIPAL</span>':'').'</div>
-      <form method=post>'.Csrf::field().'<input type=hidden name=action value=save_media><input type=hidden name=id value="'.$m['id'].'">
-        <div class=grid2>'.row('Legenda','caption',$m['caption']).row('Texto alternativo','alt_text',$m['alt_text']).row('Ordem','sort_order',$m['sort_order'],'number').'</div>
-        <div class=hero-toggle-row>'.row('Exibir no hero','active',$m['active']??1,'checkbox').row('Usar como capa principal','is_cover',$m['is_cover'],'checkbox').'</div>
-        <button>Salvar mídia</button>
-      </form>
-      <form method=post onsubmit="return confirm(\'Remover esta mídia do hero?\')">'.Csrf::field().'<input type=hidden name=action value=delete><input type=hidden name=id value="'.$m['id'].'"><button class="danger small">Remover</button></form>
-    </article>';
+  $media=$pdo->query("SELECT * FROM media WHERE scope='property' AND entity_id=1 ORDER BY is_cover DESC,sort_order,id")->fetchAll();
+  $h=adminTitle('Editor do Hero','Organize as fotos e vídeos da capa do site.');
+  $h.='<div class="hero-admin-toolbar"><button type="button" class="hero-add-button" data-hero-open="heroAddDialog">+ Adicionar mídia</button>';
+  if($media){
+    $h.='<form method="post" class="hero-clear-form" onsubmit="return confirm(\'Remover TODAS as mídias do hero?\')">'
+      .Csrf::field().'<input type="hidden" name="action" value="clear_all"><button type="submit" class="danger">Excluir todas as mídias do Hero</button></form>';
   }
   $h.='</div>';
+
+  $h.='<dialog id="heroAddDialog" class="hero-admin-dialog" aria-labelledby="heroAddTitle">'
+    .'<div class="hero-dialog-head"><div><h2 id="heroAddTitle">Adicionar mídias</h2><p>Envie fotos ou vídeos para a capa do site.</p></div>'
+    .'<button type="button" class="hero-dialog-close" data-hero-close aria-label="Fechar janela">×</button></div>'
+    .'<form method="post" enctype="multipart/form-data" class="hero-dialog-form">'
+    .Csrf::field().'<input type="hidden" name="action" value="upload">'
+    .'<div class="grid2">'
+    .'<label>Fotos do hero<input type="file" name="hero_images[]" accept="image/jpeg,image/png,image/webp" multiple></label>'
+    .'<label>Vídeo do hero<input type="file" name="hero_video_file" accept="video/mp4,video/webm"></label>'
+    .row('Ou URL direta do vídeo','video_url')
+    .row('Legenda padrão','caption')
+    .row('Texto alternativo','alt_text')
+    .row('Ordem inicial','sort_order',0,'number')
+    .'</div><div class="hero-dialog-actions"><button type="button" class="hero-dialog-cancel" data-hero-close>Cancelar</button><button type="submit">Adicionar ao hero</button></div>'
+    .'</form></dialog>';
+
+  $h.='<div class="hero-admin-grid" aria-label="Mídias do Hero">';
+  if(!$media)$h.='<div class="card empty-state"><h3>Nenhuma mídia no hero</h3><p>Clique em Adicionar mídia para enviar fotos ou vídeos.</p></div>';
+  foreach($media as $m){
+    $id=(int)$m['id'];
+    $src=safeUrl($m['file_path']?:$m['url']);
+    $isCover=(int)($m['is_cover']??0)===1;
+    $isActive=(int)($m['active']??0)===1;
+    $title=trim((string)($m['caption']??''))?:($m['type']==='video'?'Vídeo':'Foto').' #'.$id;
+    $thumbnail=$m['type']==='video'
+      ? '<video src="'.U::e($src).'" muted playsinline preload="metadata"></video><span class="hero-media-type">Vídeo</span>'
+      : '<img src="'.U::e($src).'" loading="lazy" alt="'.U::e($m['alt_text']?:$title).'">';
+    $h.='<article class="hero-media-tile'.($isCover?' is-cover':'').($isActive?'':' is-inactive').'">'
+      .'<button type="button" class="hero-media-open" data-hero-open="heroEditDialog'.$id.'" aria-label="Editar '.U::e($title).'">'
+      .'<span class="hero-media-preview">'.$thumbnail.($isCover?'<span class="cover-badge">CAPA PRINCIPAL</span>':'').'</span>'
+      .'<span class="hero-tile-caption">'.U::e($title).'</span>'
+      .'<span class="hero-tile-meta">'.($isActive?'Visível':'Oculta').' · Ordem '.(int)$m['sort_order'].'</span></button></article>';
+
+    $largePreview=$m['type']==='video'
+      ? '<video controls preload="metadata" src="'.U::e($src).'"></video>'
+      : '<img src="'.U::e($src).'" alt="'.U::e($m['alt_text']?:$title).'">';
+    $h.='<dialog id="heroEditDialog'.$id.'" class="hero-admin-dialog hero-edit-dialog" aria-labelledby="heroEditTitle'.$id.'">'
+      .'<div class="hero-dialog-head"><div><h2 id="heroEditTitle'.$id.'">Editar mídia #'.$id.'</h2><p>Legenda, ordem, visibilidade e capa principal.</p></div>'
+      .'<button type="button" class="hero-dialog-close" data-hero-close aria-label="Fechar janela">×</button></div>'
+      .'<div class="hero-dialog-preview">'.$largePreview.'</div>'
+      .'<form method="post" class="hero-dialog-form">'.Csrf::field().'<input type="hidden" name="action" value="save_media">'
+      .'<input type="hidden" name="id" value="'.$id.'">'
+      .'<div class="grid2">'.row('Legenda','caption',$m['caption'])
+      .row('Texto alternativo','alt_text',$m['alt_text'])
+      .row('Ordem','sort_order',$m['sort_order'],'number').'</div>'
+      .'<div class="hero-toggle-row">'.row('Exibir no hero','active',$m['active']??1,'checkbox')
+      .row('Usar como capa principal','is_cover',$m['is_cover'],'checkbox').'</div>'
+      .'<div class="hero-dialog-actions"><button type="button" class="hero-dialog-cancel" data-hero-close>Cancelar</button><button type="submit">Salvar mídia</button></div></form>'
+      .'<form method="post" class="hero-dialog-delete" onsubmit="return confirm(\'Remover esta mídia do hero?\')">'
+      .Csrf::field().'<input type="hidden" name="action" value="delete">'
+      .'<input type="hidden" name="id" value="'.$id.'">'
+      .'<button type="submit" class="danger small">Remover mídia</button></form></dialog>';
+  }
+  $h.='</div>';
+  $h.='<script defer src="assets/js/hero-admin.js?v=20261106"></script>';
   render('Editor do Hero',$h);exit;
