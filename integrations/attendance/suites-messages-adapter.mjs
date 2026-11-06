@@ -7,7 +7,7 @@ function unpack(message){let m=message||{};for(let i=0;i<4;i++){const nested=m.e
 function localRequest(body){
  const data=Buffer.from(JSON.stringify(body));
  return new Promise((resolve,reject)=>{
-  const req=http.request({socketPath:'/run/suites-attendance/messages.sock',path:'/message',method:'POST',headers:{'content-type':'application/json','content-length':data.length},timeout:110000},res=>{
+  const req=http.request({socketPath:'/run/suites-messages/messages.sock',path:'/message',method:'POST',headers:{'content-type':'application/json','content-length':data.length},timeout:110000},res=>{
    const chunks=[];let size=0;res.on('data',b=>{size+=b.length;if(size>8*1024*1024){res.destroy();reject(Error('RESPONSE_TOO_LARGE'));}else chunks.push(b);});
    res.on('end',()=>{try{const value=JSON.parse(Buffer.concat(chunks));if(res.statusCode!==200)throw Error('SUITES_MESSAGE_FAILED');resolve(value);}catch(e){reject(e);}});
   });req.on('timeout',()=>req.destroy(Error('SUITES_MESSAGE_TIMEOUT')));req.on('error',reject);req.end(data);
