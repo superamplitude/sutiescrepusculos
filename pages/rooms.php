@@ -58,6 +58,45 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
       U::flash('ok',$type==='diaria'?'Diária cadastrada para esta unidade.':'Pacote cadastrado para esta unidade.');
       U::redirect($back);
     }
+    if($action==='base_price_update'){
+      Auth::requirePerm('prices.edit');
+      $q=$pdo->prepare("SELECT id FROM rooms WHERE id=? AND code NOT LIKE '__deleted__%' LIMIT 1");$q->execute([$id]);
+      if($id<1||!$q->fetchColumn())throw new RuntimeException('Unidade não encontrada.');
+      $raw=trim((string)($_POST['base_price']??''));
+      if($raw===''||!is_numeric($raw))throw new RuntimeException('Informe uma diária-base válida.');
+      $value=(float)$raw;
+      if(!is_finite($value)||$value<0||$value>1000000)throw new RuntimeException('Valor inválido.');
+      $pdo->prepare("UPDATE rooms SET base_price=?,updated_at=NOW() WHERE id=?")->execute([$value,$id]);
+      Audit::log('room.base_price.update','room',$id,['base_price'=>$value]);
+      U::flash('ok','Diária-base atualizada na unidade e no portal.');
+      U::redirect('index.php?p=rooms&view=edit&id='.$id.'&section=diaria#room-pricing');
+    }
+    if($action==='room_media_add'){
+      $q=$pdo->prepare("SELECT id,cover_image,video_path,video_url FROM rooms WHERE id=? AND code NOT LIKE '__deleted__%' LIMIT 1");
+      $q->execute([$id]);$r=$q->fetch();
+      if(!$r)throw new RuntimeException('Unidade inválida.');
+      $newCover=(string)($r['cover_image']??'');$newVideo=(string)($r['video_path']??'');
+      $changed=false;
+      if(!empty($_FILES['cover_image']['name'])){$newCover=$upload->image($_FILES['cover_image'],'rooms');$changed=true;}
+      if(!empty($_FILES['video_file']['name'])){$newVideo=$upload->video($_FILES['video_file'],'rooms');$changed=true;}
+      $url=trim((string)($_POST['video_url']??''));
+      if($url!==''&&!filter_var($url,FILTER_VALIDATE_URL))throw new RuntimeException('Informe uma URL válida para o vídeo.');
+      if($url!==''&&stripos($url,'https://')!==0)throw new RuntimeException('A URL do vídeo deve usar HTTPS.');
+      if($url!==''&&$url!==(string)($r['video_url']??''))$changed=true;
+      $pdo->prepare("UPDATE rooms SET cover_image=?,video_path=?,video_url=CASE WHEN ?<>'' THEN ? ELSE video_url END,updated_at=NOW() WHERE id=?")
+        ->execute([$newCover?:null,$newVideo?:null,$url,$url,$id]);
+      $imgs=$upload->images($_FILES['gallery_images']??[],'rooms/'.$id);
+      if($imgs){
+        $mi=$pdo->prepare("INSERT INTO media(scope,entity_id,type,file_path,caption,alt_text,sort_order,is_cover,created_at) VALUES('room',?,'image',?,?,?,0,0,NOW())");
+        $caption=mb_substr(trim((string)($_POST['gallery_caption']??'')),0,180);
+        $alt=mb_substr(trim((string)($_POST['gallery_alt']??'')),0,180);
+        foreach($imgs as $img)$mi->execute([$id,$img,$caption,$alt]);
+        $changed=true;
+      }
+      Audit::log('room.media.add','room',$id,['images'=>count($imgs),'changed'=>$changed]);
+      U::flash('ok',$changed?'Mídias da unidade atualizadas.':'Nenhum novo arquivo selecionado.');
+      U::redirect('index.php?p=rooms&view=edit&id='.$id);
+    }
     if($action==='delete'){
       if($id<1)throw new RuntimeException('Unidade inválida para exclusão.');
       $q=$pdo->prepare("SELECT id,code,name FROM rooms WHERE id=? AND code NOT LIKE '__deleted__%'");$q->execute([$id]);$room=$q->fetch();
