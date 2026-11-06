@@ -36,3 +36,10 @@
 .rooms-pricing-table form{margin:0}
 @media(max-width:850px){.rooms-pricing-form .grid3{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.rooms-list-actions{margin-bottom:40px!important}.rooms-pricing-form .grid3{grid-template-columns:1fr}.room-pricing-head{align-items:flex-start}}
+
+/* Shortcuts visible on each unit page, without a duplicate page heading. */
+.room-jump-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+.room-jump-nav a{display:inline-flex;align-items:center;min-height:34px;padding:7px 13px;border:1px solid #91b9ac;border-radius:8px;background:#eaf5ef;color:#135d4c;font-size:12px;font-weight:700;text-decoration:none}
+.room-jump-nav a:hover{background:#d9eee4}
+.room-name-link:focus-visible,.room-photo-link:focus-visible,.room-jump-nav a:focus-visible{outline:3px solid #0d8375;outline-offset:2px}
+.rooms-pricing-card{scroll-margin-top:105px}
