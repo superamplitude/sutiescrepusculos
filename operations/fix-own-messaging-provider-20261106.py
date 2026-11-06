@@ -21,10 +21,13 @@ for name,digest in {'suites-baileys-provider.mjs':'f1a0358330f3095d4dedc554580bb
 def pid(s):return subprocess.check_output(['systemctl','show',s,'-p','MainPID','--value'],text=True).strip()
 preserve={s:pid(s) for s in ['suites-crepusculo-attendance.service','superamplitude-crm.service']}
 u=pwd.getpwnam('sacrm');deps=base/'suites-baileys'
-assert not deps.exists(),'Dependency directory already exists'
-deps.mkdir(mode=0o750);os.chown(deps,u.pw_uid,u.pw_gid)
+if deps.exists():
+ assert deps.is_dir() and not deps.is_symlink() and deps.resolve()==base/'suites-baileys'
+ existing=json.loads((deps/'package.json').read_text());assert existing=={'private':True,'type':'module','dependencies':{'@whiskeysockets/baileys':'6.7.23'}}
+else:deps.mkdir(mode=0o750)
+os.chown(deps,u.pw_uid,u.pw_gid)
 package=deps/'package.json';package.write_text(json.dumps({'private':True,'type':'module','dependencies':{'@whiskeysockets/baileys':'6.7.23'}}));os.chown(package,u.pw_uid,u.pw_gid)
-r=subprocess.run(['sudo','-n','-u','sacrm','npm','install','--ignore-scripts','--omit=dev','--no-audit','--no-fund'],cwd=deps,capture_output=True,text=True,timeout=240)
+r=subprocess.run(['sudo','-n','-u','sacrm','npm','install','--cache',str(deps/'.npm-cache'),'--ignore-scripts','--omit=dev','--no-audit','--no-fund'],cwd=deps,capture_output=True,text=True,timeout=240)
 assert r.returncode==0,'Pinned stable package installation failed: '+r.stderr[-1300:]
 stable=json.loads((deps/'node_modules/@whiskeysockets/baileys/package.json').read_text())['version'];assert stable=='6.7.23'
 text=old.decode()
