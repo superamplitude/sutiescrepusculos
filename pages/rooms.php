@@ -140,11 +140,14 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   $beds=json_decode($x['beds_json']?:'{}',true)?:[];$media=[];
   if($edit){$q=$pdo->prepare("SELECT * FROM media WHERE scope='room' AND entity_id=? ORDER BY id DESC");$q->execute([$edit['id']]);$media=$q->fetchAll();}
   if($view==='list'){
+    $todayRates=[];
+    $q=$pdo->query("SELECT room_id,name,price FROM tariffs WHERE active=1 AND start_date<=CURDATE() AND end_date>=DATE_ADD(CURDATE(),INTERVAL 1 DAY) ORDER BY priority DESC,id DESC");
+    foreach($q->fetchAll() as $rate){$key=(int)$rate['room_id'];if(!isset($todayRates[$key]))$todayRates[$key]=$rate;}
     $galleryCovers=[];
     $q=$pdo->query("SELECT entity_id,file_path,url FROM media WHERE scope='room' AND type='image' ORDER BY is_cover DESC,id ASC");
     foreach($q->fetchAll() as $image){$roomKey=(int)$image['entity_id'];if(!isset($galleryCovers[$roomKey]))$galleryCovers[$roomKey]=(string)($image['file_path']?:$image['url']);}
     $h='<div class="module-actions rooms-list-actions"><a class="btn" href="index.php?p=rooms&view=new">+ Adicionar unidade</a></div>';
-    $h.='<div class="card rooms-list-card"><div class="rooms-table-scroll"><table class="rooms-list-table"><thead><tr><th>Foto</th><th>Nome</th><th>Status</th><th>Capacidade</th><th>Diária</th><th>Tarifas / Pacotes</th><th>Ações</th></tr></thead><tbody>';
+    $h.='<div class="card rooms-list-card"><div class="rooms-table-scroll"><table class="rooms-list-table"><thead><tr><th>Foto</th><th>Nome</th><th>Status</th><th>Capacidade</th><th>Diária de hoje</th><th>Diária / Pacote</th><th>Ações</th></tr></thead><tbody>';
     foreach($rooms as $r){
       $rid=(int)$r['id'];
       $editUrl='index.php?p=rooms&view=edit&id='.$rid;
@@ -155,8 +158,9 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
       $h.='<tr><td><a class="room-photo-link" href="'.$editUrl.'">'.$photoHtml.'</a></td>'
         .'<td><a class="room-name-link" href="'.$editUrl.'">'.U::e($r['name']).'</a><small>'.U::e($r['code']).'</small></td>'
         .'<td>'.U::e(statusPt($r['status'])).'</td><td>'.(int)$r['capacity'].'</td>'
-        .'<td>'.money((float)$r['base_price']).'</td>'
-        .'<td><div class="room-price-actions"><a class="btn secondary small" href="'.$editUrl.'&section=diaria">Diária</a><a class="btn secondary small" href="'.$editUrl.'&section=pacote">Pacote</a></div></td>'
+        .'<td class="room-price-current">'.money((float)($todayRates[$rid]['price']??$r['base_price']))
+        .'<small>'.(isset($todayRates[$rid])?'Tarifa: '.U::e($todayRates[$rid]['name']):'Diária-base').'</small></td>'
+        .'<td><div class="room-price-actions"><a class="btn secondary small" href="'.$editUrl.'&section=diaria#room-pricing">Diária</a><a class="btn secondary small" href="'.$editUrl.'&section=pacote#room-pricing">Pacote</a></div></td>'
         .'<td><div class="table-actions"><a class="btn secondary small" href="'.$editUrl.'">Editar</a>'
         .'<form method="post" class="inline-form" onsubmit="return confirm(\'Excluir esta unidade? Reservas históricas serão preservadas.\')">'
         .Csrf::field().'<input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="'.$rid.'">'
