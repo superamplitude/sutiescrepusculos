@@ -102,7 +102,11 @@
     "service": "suites-crepusculo-attendance.service",
     "runtime": "/opt/suites-crepusculo-attendance",
     "owner_confirmed": true,
-    "policy": "Do not change or restart confirmed working voice without a new owner request."
+    "policy": "Do not change or restart confirmed working voice without a new owner request.",
+    "files": {
+      "calls-worker.mjs": "5f12d5bd6a5f674b746e382b10537e04651b622ed1b2226b5e8039bfa9f436b5",
+      "context.php": "e93655ff7aa93e719420c692a3bf9d2930b0a9731a45177059a87f7f65deb399"
+    }
   },
   "messages": {
     "service": "suites-crepusculo-messages.service",
@@ -110,14 +114,23 @@
     "gateway": "http://127.0.0.1:18190",
     "session": "suites-crepusculo",
     "socket": "/run/suites-messages/messages.sock",
-    "gateway_adapter_sha256": "62bf2c9ed94d46e5bb181b8be469453fc119ab8fed44c2768e3b81efe270ba6e",
+    "gateway_adapter_sha256": "7d5597a38832fdff2030fcfd3462683e1262c25f3d29f7f7b55ea426451fbb48",
     "files": {
       "messages-worker.mjs": "a7de20ac1d2f66957e4506ac109e10d591d9aba6cfb733dfa48b4adf7243ede4",
       "messages-context.php": "14535a84ad491c1dec37867ce6add52f9505bb0360cc84fa2e95065258d84466",
       "messages.php": "b07f562371c1f5f968c41ddc46dcf3694e40ef7eafb3e864ed9442a8e87b0867",
       "messages-server.mjs": "0fa036bc8cd2c415ad5dad6a3eb401241ac38882d4747704a3c6afcc147df5ff",
-      "suites-messages-adapter.mjs": "62bf2c9ed94d46e5bb181b8be469453fc119ab8fed44c2768e3b81efe270ba6e",
+      "suites-messages-adapter.mjs": "7d5597a38832fdff2030fcfd3462683e1262c25f3d29f7f7b55ea426451fbb48",
       "messages.test.mjs": "9cd396fcad7cdaabbd71b786110ea082fe4d578d92299d5d15c27f33a78f45e4"
-    }
+    },
+    "gateway_source_sha256": "a902430f47be5426d98a5aa1c9768e6c9ec893cfc3303638190b1644a3d1fbab",
+    "gateway_files": {
+      "suites-messages-adapter.mjs": "7d5597a38832fdff2030fcfd3462683e1262c25f3d29f7f7b55ea426451fbb48",
+      "suites-session-registration.mjs": "66323a3abf14526b0388395c69dc8cfabb7c521e56eaf761be6e0eabb31f08d9",
+      "suites-baileys-provider.mjs": "f1a0358330f3095d4dedc554580bb283a22315215bd29b2128cd2e22b68337bb"
+    },
+    "registration": "/etc/suites-messaging-gateway/session.json",
+    "suites_library_version": "6.7.23",
+    "other_sessions_library_version": "7.0.0-rc14"
   }
 }
