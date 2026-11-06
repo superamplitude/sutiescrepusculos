@@ -19,7 +19,7 @@ export async function handleSuitesMessage(sock,msg,{request=localRequest,downloa
  let text=String(m.conversation||m.extendedTextMessage?.text||'').trim(),data={};
  if(audio){
   if(Number(audio.seconds||0)>180||Number(audio.fileLength||0)>5*1024*1024)return {ignored:true,reason:'audio_too_large'};
-  const get=download||((await import('@whiskeysockets/baileys')).downloadMediaMessage);
+  const get=download||((await (await import('./suites-baileys-provider.mjs')).suitesMessagingProvider()).download);
   const logger={debug(){},info(){},warn(){},error(){},trace(){},child(){return this;}};
   const buffer=await get(msg,'buffer',{}, {logger,reuploadRequest:sock.updateMediaMessage});
   if(buffer.length>5*1024*1024)return {ignored:true,reason:'audio_too_large'};
