@@ -27,10 +27,10 @@ final class AiConversationService
         $history=array_reverse($q->fetchAll()?:[]);
         if(!$history)return null;
 
-        $property=$pdo->query("SELECT name,short_description,description,checkin,checkout,phone,whatsapp,email,city,state,house_rules,cancellation_policy FROM property WHERE id=1")->fetch()?:[];
+        $property=BusinessContextService::property();
         $kb=$pdo->query("SELECT title,content FROM knowledge_base WHERE active=1 ORDER BY id DESC LIMIT 20")->fetchAll()?:[];
 
-        $prompt="Você é o atendente virtual oficial do estabelecimento. Responda em português do Brasil, de forma curta, cordial e objetiva. Nunca invente preço, disponibilidade, política ou serviço. Se a informação não estiver confirmada, diga que a equipe humana irá confirmar.\n\n";
+        $prompt=BusinessContextService::instructions($property)."\n";
         $prompt.=(new VoiceProfileService())->conversationInstructions()."\n\n";
         $prompt.="ESTABELECIMENTO:\n".json_encode($property,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)."\n\nBASE CONFIRMADA:\n";
         foreach($kb as $row)$prompt.="- ".trim((string)$row['title']).": ".trim((string)$row['content'])."\n";
