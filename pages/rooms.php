@@ -238,11 +238,15 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   if($edit){
     $rid=(int)$edit['id'];
     $section=(string)($_GET['section']??'');
-    $h.='<section class="card rooms-pricing-card" id="room-pricing"><div class="room-pricing-head"><div><h2>Diárias e pacotes</h2><p class="muted">Valores e ofertas desta unidade: '.U::e($edit['name']).'.</p></div><div class="room-pricing-tabs"><a href="index.php?p=rooms&view=edit&id='.$rid.'&section=diaria#room-pricing" class="'.($section==='diaria'?'current':'').'">Diária</a><a href="index.php?p=rooms&view=edit&id='.$rid.'&section=pacote#room-pricing" class="'.($section==='pacote'?'current':'').'">Pacote</a></div></div>';
+    if(in_array($section,['diaria','pacote'],true)){
+      $h.='<section class="card rooms-pricing-card" id="room-pricing">';
     if($section==='diaria'){
       $q=$pdo->prepare("SELECT id,name,start_date,end_date,price,min_nights,priority,active FROM tariffs WHERE room_id=? ORDER BY start_date DESC,id DESC");
       $q->execute([$rid]);$list=$q->fetchAll();
-      $h.='<h3>Tarifas desta unidade</h3><p class="muted">Cadastre valores por período, incluindo alta e baixa temporada. A diária-base permanece no cadastro acima.</p>';
+      $h.='<h3>Diárias · '.U::e($edit['name']).'</h3><p class="muted">O valor-base aparece na unidade. Tarifas de temporada valem apenas para o período configurado.</p>';
+      if(Auth::can('prices.edit'))$h.='<form class="room-base-price-form" method="post">'.Csrf::field().'<input type="hidden" name="action" value="base_price_update"><input type="hidden" name="id" value="'.$rid.'">'
+        .'<label>Diária-base da unidade (R$)<input type="number" name="base_price" min="0" max="1000000" step="0.01" value="'.U::e(number_format((float)$edit['base_price'],2,'.','')).'" required></label>'
+        .'<button type="submit">Salvar diária-base</button></form>';
       $h.='<form method="post" class="rooms-pricing-form">'.Csrf::field().'<input type="hidden" name="action" value="tariff_add"><input type="hidden" name="room_id" value="'.$rid.'"><div class="grid3">'
         .row('Nome da tarifa','name')
         .row('Início','start_date','','date').row('Fim','end_date','','date')
@@ -268,9 +272,12 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
       }
       if(!$list)$h.='<tr><td colspan="6">Nenhum pacote cadastrado para esta unidade.</td></tr>';
       $h.='</tbody></table></div>';
-    }else{
-      $h.='<p class="muted">Selecione Diária ou Pacote para gerenciar os valores específicos desta unidade.</p>';
     }
     $h.='</section>';
+    }else{
+      $h.='<section class="card room-unit-summary"><h2>'.U::e($edit['name']).'</h2><p>Diária-base: <strong>'.money((float)$edit['base_price']).'</strong> · Capacidade: '.(int)$edit['capacity'].' · '.U::e(statusPt($edit['status'])).'</p><p class="muted">Use os botões acima para editar os dados, adicionar fotos, configurar diárias ou cadastrar pacotes.</p></section>';
+    }
   }
-  $h.='</div>';render($edit?'Editar unidade':'Nova unidade',$h);exit;
+  $h.=($edit?'':'</div>');
+  $h.='<script defer src="assets/js/rooms-admin.js?v=20261106b"></script>';
+  render($edit?'Editar unidade':'Nova unidade',$h);exit;
