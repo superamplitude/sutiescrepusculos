@@ -4,7 +4,7 @@ export function validateSuitesRegistration(value,id){
  return true;
 }
 export async function assertSuitesProvisioned(id){
- const file='/etc/superamplitude/runtime/suites-messaging-session.json',meta=await stat(file);
+ const file='/etc/suites-messaging-gateway/session.json',meta=await stat(file);
  if(meta.uid!==0||(meta.mode&0o022)!==0)throw Error('SUITES_REGISTRATION_PERMISSIONS');
  validateSuitesRegistration(JSON.parse(await readFile(file,'utf8')),id);
  const socket=await stat('/run/suites-messages/messages.sock');
