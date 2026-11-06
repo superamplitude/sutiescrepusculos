@@ -71,16 +71,6 @@
       </div>
     </details>
 
-    <details name="admin-menu" class="admin-nav-group" <?=in_array($adminPage,['crm360','crm_contacts','crm_leads','crm_tasks'],true)?'open':''?>>
-      <summary>CRM</summary>
-      <div class="admin-nav-group-links">
-        <a href="index.php?p=crm360" class="<?=$adminPage==='crm360'?'active':''?>"><span class="nav-dot"></span><span>CRM 360°</span></a>
-        <a href="index.php?p=crm_contacts" class="<?=$adminPage==='crm_contacts'?'active':''?>"><span class="nav-dot"></span><span>Contatos</span></a>
-        <a href="index.php?p=crm_leads" class="<?=$adminPage==='crm_leads'?'active':''?>"><span class="nav-dot"></span><span>Leads / Funil</span></a>
-        <a href="index.php?p=crm_tasks" class="<?=$adminPage==='crm_tasks'?'active':''?>"><span class="nav-dot"></span><span>Tarefas / Follow-up</span></a>
-      </div>
-    </details>
-
     <details name="admin-menu" class="admin-nav-group" <?=in_array($adminPage,['messages','whatsapp_rnl','contacts_admin','content','reviews'],true)?'open':''?>>
       <summary>Atendimento e conteúdo</summary>
       <div class="admin-nav-group-links">
@@ -228,6 +218,6 @@
   <label>Pergunta<textarea maxlength="550" placeholder="Fale ou escreva sua pergunta"></textarea></label>
   <div class="suites-voice-actions"><button type="button" data-voice-send>Enviar</button><button type="button" data-voice-mic>Microfone</button><button type="button" data-voice-repeat>Repetir</button><button type="button" data-voice-stop>Parar</button><button type="button" data-voice-test>Testar voz</button></div>
 </section>
-<script defer src="assets/js/panel-voice.js?v=20261106"></script>
+<script defer src="assets/js/panel-voice.js?v=20261105"></script>
 <?php endif;?>
 </body></html>
