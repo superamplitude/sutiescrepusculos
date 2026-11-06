@@ -24,7 +24,7 @@ await page.locator('textarea').fill('Pergunta durante saudação.');
 await page.locator('[data-voice-send]').click();
 await page.waitForFunction(()=>window.__requests.some(x=>x.kind==='answer'),{},{timeout:3000});
 assert(await page.evaluate(()=>window.__pending[0].aborted),'greeting must be cancelled');
-await page.waitForFunction(()=>document.querySelector('[data-voice-answer]').textContent==='Resposta de teste.');
+await page.waitForFunction(()=>document.querySelector('[data-voice-answer]').textContent.includes('Assistente: Resposta de teste.'));
 assert.equal(await page.locator('[data-voice-send]').isDisabled(),false);
 await page.waitForFunction(()=>window.__pending.length===2);
 await page.locator('[data-voice-stop]').click();
