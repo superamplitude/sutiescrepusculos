@@ -75,19 +75,6 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
       U::flash('ok',$type==='diaria'?'Diária cadastrada para esta unidade.':'Pacote cadastrado para esta unidade.');
       U::redirect($back);
     }
-    if($action==='base_price_update'){
-      Auth::requirePerm('prices.edit');
-      $q=$pdo->prepare("SELECT id FROM rooms WHERE id=? AND code NOT LIKE '__deleted__%' LIMIT 1");$q->execute([$id]);
-      if($id<1||!$q->fetchColumn())throw new RuntimeException('Unidade não encontrada.');
-      $raw=trim((string)($_POST['base_price']??''));
-      if($raw===''||!is_numeric($raw))throw new RuntimeException('Informe uma diária-base válida.');
-      $value=(float)$raw;
-      if(!is_finite($value)||$value<0||$value>1000000)throw new RuntimeException('Valor inválido.');
-      $pdo->prepare("UPDATE rooms SET base_price=?,updated_at=NOW() WHERE id=?")->execute([$value,$id]);
-      Audit::log('room.base_price.update','room',$id,['base_price'=>$value]);
-      U::flash('ok','Diária-base atualizada na unidade e no portal.');
-      U::redirect('index.php?p=rooms&view=edit&id='.$id.'&section=diaria#room-pricing');
-    }
     if($action==='room_media_add'){
       $q=$pdo->prepare("SELECT id,cover_image,video_path,video_url FROM rooms WHERE id=? AND code NOT LIKE '__deleted__%' LIMIT 1");
       $q->execute([$id]);$r=$q->fetch();
@@ -175,8 +162,8 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
       $h.='<tr><td><a class="room-photo-link" href="'.$editUrl.'">'.$photoHtml.'</a></td>'
         .'<td><a class="room-name-link" href="'.$editUrl.'">'.U::e($r['name']).'</a><small>'.U::e($r['code']).'</small></td>'
         .'<td>'.U::e(statusPt($r['status'])).'</td><td>'.(int)$r['capacity'].'</td>'
-        .'<td class="room-price-current">'.money((float)($todayRates[$rid]['price']??$r['base_price']))
-        .'<small>'.(isset($todayRates[$rid])?'Tarifa: '.U::e($todayRates[$rid]['name']):'Diária-base').'</small></td>'
+        .'<td class="room-price-current">'.(isset($todayRates[$rid])?money((float)$todayRates[$rid]['price']):'Sem diária')
+        .'<small>'.(isset($todayRates[$rid])?'Tarifa: '.U::e($todayRates[$rid]['name']):'Cadastre em Diária').'</small></td>'
         .'<td><div class="room-price-actions"><a class="btn secondary small" href="'.$editUrl.'&section=diaria#room-pricing">Diária</a><a class="btn secondary small" href="'.$editUrl.'&section=pacote#room-pricing">Pacote</a></div></td>'
         .'<td><div class="table-actions"><a class="btn secondary small" href="'.$editUrl.'">Editar</a>'
         .'<form method="post" class="inline-form" onsubmit="return confirm(\'Excluir esta unidade? Reservas históricas serão preservadas.\')">'
@@ -210,7 +197,7 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   if($media){$h.='<div class=gallery>';foreach($media as $m){$src=$m['file_path']?:$m['url'];if(!$src)continue;$h.='<figure><img src="'.U::e(safeUrl($src)).'" alt="'.U::e($m['alt_text']).'"><figcaption>'.U::e($m['caption']).'</figcaption></figure>';}$h.='</div>';}
   $h.='</section>';
   }
-  $h.='<h3>Preços</h3><div class=grid3>'.row('Diária-base','base_price',$x['base_price'],'number').row('Hóspede extra','extra_guest_fee',$x['extra_guest_fee'],'number').row('Taxa de limpeza','cleaning_fee',$x['cleaning_fee'],'number').row('Noites mínimas','min_nights',$x['min_nights'],'number').row('Noites máximas','max_nights',$x['max_nights'],'number').'</div><h3>Comodidades</h3><div class=amenities>';
+  $h.='<h3>Taxas e condições</h3><input type=hidden name=base_price value="'.U::e($x['base_price']===''?'0':$x['base_price']).'"><div class=grid3>'.row('Hóspede extra','extra_guest_fee',$x['extra_guest_fee'],'number').row('Taxa de limpeza','cleaning_fee',$x['cleaning_fee'],'number').row('Noites mínimas','min_nights',$x['min_nights'],'number').row('Noites máximas','max_nights',$x['max_nights'],'number').'</div><h3>Comodidades</h3><div class=amenities>';
   $cat='';foreach($ams as $a){if($cat!==$a['category']){$cat=$a['category'];$h.='<h4>'.U::e($cat).'</h4>';}$h.='<label class=check><input type=checkbox name="amenities[]" value="'.$a['id'].'" '.(in_array($a['id'],$selected)?'checked':'').'> '.U::e($a['name']).'</label>';}
   $h.='</div>'.row('Publicar esta unidade','active',$x['active'],'checkbox').'<div class="form-actions"><button type="submit">'.($edit?'Salvar alterações':'Adicionar unidade').'</button>'.($edit?'<button type="button" class="btn secondary" data-room-close>Cancelar</button>':'<a class="btn secondary" href="index.php?p=rooms">Cancelar</a>').'</div></form>';
   if($edit){
@@ -243,10 +230,7 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
     if($section==='diaria'){
       $q=$pdo->prepare("SELECT id,name,start_date,end_date,price,min_nights,priority,active FROM tariffs WHERE room_id=? ORDER BY start_date DESC,id DESC");
       $q->execute([$rid]);$list=$q->fetchAll();
-      $h.='<h3>Diárias · '.U::e($edit['name']).'</h3><p class="muted">O valor-base aparece na unidade. Tarifas de temporada valem apenas para o período configurado.</p>';
-      if(Auth::can('prices.edit'))$h.='<form class="room-base-price-form" method="post">'.Csrf::field().'<input type="hidden" name="action" value="base_price_update"><input type="hidden" name="id" value="'.$rid.'">'
-        .'<label>Diária-base da unidade (R$)<input type="number" name="base_price" min="0" max="1000000" step="0.01" value="'.U::e(number_format((float)$edit['base_price'],2,'.','')).'" required></label>'
-        .'<button type="submit">Salvar diária-base</button></form>';
+      $h.='<h3>Diárias · '.U::e($edit['name']).'</h3><p class="muted">Valores por período vinculados ao mapa de diárias. Cada noite utiliza a tarifa ativa para sua data.</p>';
       $h.='<form method="post" class="rooms-pricing-form">'.Csrf::field().'<input type="hidden" name="action" value="tariff_add"><input type="hidden" name="room_id" value="'.$rid.'"><div class="grid3">'
         .row('Nome da tarifa','name')
         .row('Início','start_date','','date').row('Fim','end_date','','date')
@@ -275,7 +259,7 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
     }
     $h.='</section>';
     }else{
-      $h.='<section class="card room-unit-summary"><h2>'.U::e($edit['name']).'</h2><p>Diária-base: <strong>'.money((float)$edit['base_price']).'</strong> · Capacidade: '.(int)$edit['capacity'].' · '.U::e(statusPt($edit['status'])).'</p><p class="muted">Use os botões acima para editar os dados, adicionar fotos, configurar diárias ou cadastrar pacotes.</p></section>';
+      $h.='<section class="card room-unit-summary"><h2>'.U::e($edit['name']).'</h2><p>Capacidade: '.(int)$edit['capacity'].' · '.U::e(statusPt($edit['status'])).'</p><p class="muted">Use os botões acima para editar os dados, adicionar fotos, configurar diárias ou cadastrar pacotes.</p></section>';
     }
   }
   $h.=($edit?'':'</div>');
