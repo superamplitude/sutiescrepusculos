@@ -67,7 +67,7 @@
  };
  toggle.addEventListener('click',()=>{
    const visible=host.hidden;host.hidden=!visible;toggle.setAttribute('aria-expanded',String(visible));
-   if(visible){question.focus();if(pendingGreeting&&!greetingPlayed)userGesture();}
+   if(visible){question.focus();}
  });
  host.querySelector('[data-voice-close]').addEventListener('click',()=>{cleanAudio();host.hidden=true;toggle.setAttribute('aria-expanded','false');});
  sendButton.addEventListener('click',send);
@@ -75,7 +75,7 @@
  host.querySelector('[data-voice-repeat]').addEventListener('click',()=>{if(!busy&&lastText)void playText(lastText);});
  host.querySelector('[data-voice-stop]').addEventListener('click',()=>{cleanAudio();sayStatus('Voz interrompida. Chat disponível.');});
  host.querySelector('[data-voice-test]').addEventListener('click',()=>{if(!busy)void playText('Olá. Estou pronta para conversar e ajudar no seu painel.');});
- welcomeButton.addEventListener('click',()=>{if(!busy&&welcomeText)void playText(welcomeText,true);});
+ welcomeButton.addEventListener('click',()=>{if(!busy&&welcomeText)userGesture();});
  host.querySelector('[data-agent-confirm]').addEventListener('click',()=>{if(!pendingToken)return;const token=pendingToken;pendingToken='';confirmBox.hidden=true;void act('confirm',token);});
  host.querySelector('[data-agent-cancel]').addEventListener('click',()=>{pendingToken='';confirmBox.hidden=true;void act('cancel','cancelar');});
  const mic=host.querySelector('[data-voice-mic]'),Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -92,7 +92,7 @@
    }else if(welcomeText)void playText(welcomeText,true);
  };
  document.addEventListener('pointerdown',e=>{
-   if(e.target.closest('[data-voice-send], [data-voice-close], [data-voice-mic], [data-voice-stop]'))return;
+   if(e.target.closest('[data-voice-greeting], [data-voice-send], [data-voice-close], [data-voice-mic], [data-voice-stop], [data-voice-repeat], [data-voice-test]'))return;
    userGesture();
  },{passive:true});
  fetch('chat.php?action=panel_voice',{credentials:'same-origin',cache:'no-store'})
