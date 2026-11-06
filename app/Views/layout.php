@@ -33,25 +33,13 @@
   </div>
 
   <nav class="admin-nav">
-    <?php $adminPage=$_GET['p']??'dashboard'; $propertySection=$_GET['section']??'identity'; ?>
+    <?php $adminPage=$_GET['p']??'dashboard'; ?>
     <a href="index.php?p=dashboard" class="admin-dashboard-link <?=$adminPage==='dashboard'?'active':''?>">⌂ <span><?=Auth::isSuperAdmin()?'Painel Mestre':'Dashboard'?></span></a>
 
     <details name="admin-menu" class="admin-nav-group" <?=in_array($adminPage,['property','hero','rooms','tariffs','promotions','gallery','attractions'],true)?'open':''?>>
       <summary>Estabelecimento</summary>
       <div class="admin-nav-group-links">
-        <span class="admin-nav-sublabel">Informações do Estabelecimento</span>
-        <?php foreach([
-          'identity'=>'Identidade',
-          'profile'=>'Perfil / Conteúdo',
-          'cover'=>'Capa do site',
-          'location'=>'Localização',
-          'contact'=>'Contato',
-          'operation'=>'Operação',
-          'rules'=>'Regras / Políticas',
-          'amenities'=>'Comodidades'
-        ] as $sk=>$sv): ?>
-          <a class="admin-subitem <?=($adminPage==='property'&&$propertySection===$sk)?'active':''?>" href="index.php?p=property&section=<?=$sk?>"><span class="nav-dot"></span><span><?=U::e($sv)?></span></a>
-        <?php endforeach;?>
+        <a href="index.php?p=property" class="admin-subitem <?=$adminPage==='property'?'active':''?>"><span class="nav-dot"></span><span>Informações do Estabelecimento</span></a>
         <a href="index.php?p=hero" class="<?=$adminPage==='hero'?'active':''?>"><span class="nav-dot"></span><span>Editor do Hero</span></a>
         <a href="index.php?p=rooms" class="<?=$adminPage==='rooms'?'active':''?>"><span class="nav-dot"></span><span>Quartos / Unidades</span></a>
         <a href="index.php?p=tariffs" class="<?=$adminPage==='tariffs'?'active':''?>"><span class="nav-dot"></span><span>Tarifas</span></a>
