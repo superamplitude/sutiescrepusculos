@@ -26,3 +26,52 @@
  .admin-mode dialog.reservation-overlay{width:calc(100vw - 12px);height:calc(100dvh - 18px);max-height:calc(100dvh - 18px);border-radius:9px}
  .admin-mode .reservation-overlay-head{padding:8px 11px}
 }
+
+
+/* Reservations: compact reading list; status and reason appear only in the selected row. */
+.admin-mode .reservations-list-card{padding:18px 20px}
+.admin-mode .reservations-list-table{border-collapse:collapse;table-layout:auto}
+.admin-mode .reservations-list-table th{
+ text-align:left;padding:10px 10px 12px;font-size:10px;letter-spacing:.05em;
+ font-weight:700;color:#637970;background:#f6f8f8;white-space:nowrap;
+}
+.admin-mode .reservations-list-table td{
+ text-align:left;padding:15px 10px;line-height:1.4;font-size:12px;color:#233e35;
+ border-bottom:1px solid #c3d0ca;
+}
+.admin-mode .reservations-list-table tbody tr:last-child td{border-bottom:0}
+.admin-mode .reservations-list-table .reservation-guest{font-weight:600;min-width:126px}
+.admin-mode .reservations-list-table .reservation-room{min-width:140px;max-width:210px}
+.admin-mode .reservations-list-table .reservation-dates{min-width:153px;white-space:normal;font-variant-numeric:tabular-nums}
+.admin-mode .reservations-list-table .reservation-date-arrow{color:#76867f}
+.admin-mode .reservations-list-table .reservation-status{min-width:130px}
+.admin-mode .reservations-list-table .reservation-status-text{display:inline-block;font-weight:550}
+.admin-mode .reservations-list-table .reservation-total{min-width:94px;font-weight:650;white-space:nowrap;font-variant-numeric:tabular-nums}
+.admin-mode .reservations-list-table .reservation-action-cell{min-width:78px;width:36%}
+.admin-mode .reservations-list-table .reservation-row-actions{display:flex;flex-wrap:wrap;align-items:center;gap:7px;min-width:0}
+.admin-mode .reservations-list-table .reservation-inline-toggle{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;margin:0;min-height:34px;padding:6px 11px}
+.admin-mode .reservations-list-table .reservation-inline-form[hidden]{display:none!important}
+.admin-mode .reservations-list-table .reservation-inline-form{
+ display:flex;align-items:end;gap:7px;flex-wrap:wrap;margin:0;min-width:0;
+}
+.admin-mode .reservations-list-table .reservation-inline-field{display:flex;flex-direction:column;gap:4px;min-width:0;margin:0;font-size:11px;font-weight:600;color:#456157}
+.admin-mode .reservations-list-table .reservation-inline-field span{font-size:10px;font-weight:600}
+.admin-mode .reservations-list-table .reservation-inline-field select{
+ box-sizing:border-box;max-width:175px;width:148px;min-height:34px;margin:0;padding:5px 7px;font:12px inherit;border-radius:8px;border:1px solid #a1b7ad;
+}
+.admin-mode .reservations-list-table .reservation-inline-field input{
+ box-sizing:border-box;max-width:170px;width:125px;min-height:34px;margin:0;padding:6px 8px;font-size:12px;border-radius:8px;border:1px solid #a1b7ad;
+}
+.admin-mode .reservations-list-table .reservation-status-submit{min-height:34px;max-height:34px;align-self:end;margin:0;padding:6px 11px;font-size:12px;background:#0b897c;color:#fff;border-radius:8px}
+.admin-mode .reservations-list-table .reservation-row-editing{background:#fcfdfc}
+.admin-mode .reservations-list-table .reservation-row-editing .reservation-action-cell{min-width:390px}
+.admin-mode .reservations-list-table .reservation-row-editing .reservation-inline-toggle{background:#f1f5f3;color:#315747}
+@media(max-width:1080px){
+ .admin-mode .reservations-list-table .reservation-row-editing .reservation-action-cell{min-width:280px}
+ .admin-mode .reservations-list-table .reservation-inline-form{align-items:end}
+}
+@media(max-width:720px){
+ .admin-mode .reservations-list-card{padding:10px}
+ .admin-mode .reservations-list-table .reservation-row-editing .reservation-action-cell{min-width:255px}
+ .admin-mode .reservations-list-table .reservation-inline-form{flex-wrap:wrap}
+}
