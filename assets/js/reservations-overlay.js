@@ -4,6 +4,36 @@
  const frame=dialog?.querySelector('.reservation-overlay-frame');
  const canUse=()=>dialog instanceof HTMLDialogElement&&typeof dialog.showModal==='function'&&frame;
  let source=null;
+ const collapseInline=(row)=>{
+  const control=row?.querySelector('[data-reservation-edit-toggle]');
+  const form=row?.querySelector('[data-reservation-inline-form]');
+  if(!control||!form)return;
+  form.hidden=true;
+  control.setAttribute('aria-expanded','false');
+  control.textContent='Editar';
+  row.classList.remove('reservation-row-editing');
+ };
+ document.addEventListener('click',event=>{
+  const trigger=event.target.closest('[data-reservation-edit-toggle]');
+  if(!trigger)return;
+  const row=trigger.closest('.reservation-list-row'),form=row?.querySelector('[data-reservation-inline-form]');
+  if(!row||!form)return;
+  const opening=form.hidden;
+  document.querySelectorAll('.reservation-row-editing').forEach(collapseInline);
+  if(opening){
+   form.hidden=false;
+   row.classList.add('reservation-row-editing');
+   trigger.textContent='Fechar';
+   trigger.setAttribute('aria-expanded','true');
+   form.querySelector('select[name="status"]')?.focus();
+  }else trigger.focus();
+ });
+ document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'){
+   const active=event.target.closest('.reservation-row-editing');
+   if(active){collapseInline(active);active.querySelector('[data-reservation-edit-toggle]')?.focus();}
+  }
+ });
  document.addEventListener('click',event=>{
   const target=event.target.closest('[data-reservation-open]');
   if(target){
