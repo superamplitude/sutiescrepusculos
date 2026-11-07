@@ -109,7 +109,7 @@
    }else if(welcomeText)void playText(welcomeText,true);
  };
  document.addEventListener('pointerdown',e=>{
-   if(e.target.closest('[data-voice-greeting], [data-voice-send], [data-voice-close], [data-voice-mic], [data-voice-stop], [data-voice-repeat], [data-voice-test]'))return;
+   if(e.target.closest('[data-voice-greeting], [data-voice-send], [data-voice-close], [data-voice-mic], [data-voice-stop], [data-voice-repeat], [data-voice-test], #suitesVoiceToggle'))return;
    userGesture();
  },{passive:true});
  fetch('/chat.php?action=panel_voice',{credentials:'same-origin',cache:'no-store'})
