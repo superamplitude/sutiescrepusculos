@@ -207,7 +207,7 @@ body.reservation-embed .card h2{font-size:15px}
 </div>
 <?php endif;?>
 <?php if(!Auth::user() && !empty($siteSettings['custom_css'])):?><style><?=str_replace('</style','<\/style',(string)$siteSettings['custom_css'])?></style><?php endif;?><?php $jsV=@filemtime(__DIR__.'/../../assets/js/app.js')?:time(); ?><script src="/assets/js/app.js?v=<?=$jsV?>"></script><?php if(Auth::user() && !(($_GET['p']??'')==='reservation_edit' && ($_GET['embed']??'')==='1')): if(empty($_SESSION['_panel_voice_greeting']))$_SESSION['_panel_voice_greeting']=bin2hex(random_bytes(8)); ?>
-<link rel="stylesheet" href="/assets/css/panel-voice.css?v=20261106c">
+<link rel="stylesheet" href="/assets/css/panel-voice.css?v=20261107welcome">
 <button type="button" id="suitesVoiceToggle" class="suites-voice-toggle" aria-expanded="false" aria-controls="suitesPanelVoice">💬 Falar com IA</button>
 <section id="suitesPanelVoice" class="suites-voice-panel" data-greeting="<?=U::e($_SESSION['_panel_voice_greeting'])?>" hidden aria-label="Chat e voz">
   <header><span class="suites-voice-avatar" aria-hidden="true">✦</span><span class="suites-voice-head-copy"><strong>Assistente IA</strong><small>Atendimento por chat e voz</small></span><button type="button" data-voice-close aria-label="Fechar assistente">×</button></header>
@@ -218,6 +218,6 @@ body.reservation-embed .card h2{font-size:15px}
   <label class="suites-voice-compose"><span class="sr-only">Mensagem</span><textarea maxlength="550" placeholder="Escreva sua mensagem…" rows="2"></textarea></label>
   <div class="suites-voice-actions"><button type="button" class="suites-send" data-voice-send>Enviar</button><button type="button" data-voice-mic>🎙 Microfone</button><button type="button" data-voice-repeat>↻ Repetir</button><button type="button" data-voice-stop>■ Parar</button><button type="button" data-voice-test>▶ Teste</button></div>
 </section>
-<script defer src="/assets/js/panel-voice.js?v=20261106c"></script>
+<script defer src="/assets/js/panel-voice.js?v=20261107welcome"></script>
 <?php endif;?>
 </body></html>
