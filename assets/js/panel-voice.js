@@ -9,6 +9,22 @@
  const welcomeButton=host.querySelector('[data-voice-greeting]');
  let audio=null,objectUrl=null,lastText='',busy=false,speechController=null,speechVersion=0,pendingGreeting='',pendingToken='',welcomeText='',welcomeKey='',greetingPlayed=false;
  const sayStatus=t=>{status.textContent=t;};
+ const saveWelcome=()=>{try{if(welcomeKey)sessionStorage.setItem(welcomeKey,'played');}catch{}};
+ const welcomePreviouslyPlayed=()=>{try{return sessionStorage.getItem(welcomeKey)==='played';}catch{return false;}};
+ const showVoiceAction=(message)=>{
+   // Autoplay is restricted by some browsers; never hide the one-click recovery
+   // inside a collapsed chat. Preserve the original natural voice provider.
+   host.hidden=false;toggle.setAttribute('aria-expanded','true');
+   toggle.classList.add('needs-voice-gesture');
+   toggle.textContent='▶ Ouvir recepção';
+   welcomeButton.hidden=false;
+   sayStatus(message||'Clique em Ouvir recepção para ativar a voz natural.');
+ };
+ const welcomeStarted=()=>{
+   greetingPlayed=true;pendingGreeting='';welcomeButton.hidden=true;
+   toggle.classList.remove('needs-voice-gesture');toggle.textContent='💬 Falar com IA';
+   saveWelcome();sayStatus('Falando…');
+ };
  const cleanAudio=()=>{
    speechVersion++;speechController?.abort();speechController=null;
    audio?.pause();audio=null;if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=null;
@@ -35,10 +51,10 @@
      const blob=await res.blob();if(version!==speechVersion)return;
      objectUrl=URL.createObjectURL(blob);audio=new Audio(objectUrl);
      audio.addEventListener('ended',()=>{if(version===speechVersion)sayStatus('Pronta para conversar.');});
-     try{await audio.play();if(version===speechVersion){sayStatus('Falando…');if(isWelcome){greetingPlayed=true;pendingGreeting='';welcomeButton.hidden=true;if(welcomeKey)sessionStorage.setItem(welcomeKey,'played');}else pendingGreeting='';}}
+     try{await audio.play();if(version===speechVersion){if(isWelcome)welcomeStarted();else{sayStatus('Falando…');pendingGreeting='';}}}
      catch(error){
        if(version!==speechVersion)return;
-       if(error.name==='NotAllowedError'){if(isWelcome){pendingGreeting=text;welcomeButton.hidden=false;}sayStatus('O navegador bloqueou o início automático do áudio. Toque em Ouvir recepção.');}
+       if(error.name==='NotAllowedError'){if(isWelcome){pendingGreeting=text;showVoiceAction('O navegador pediu um clique para iniciar a recepção.');}else sayStatus('O navegador bloqueou o áudio. Clique no botão de voz para permitir.');}
        else throw error;
      }
    }catch(e){if(version===speechVersion)sayStatus(e.name==='AbortError'?'Áudio excedeu o tempo de resposta.':e.message);}
@@ -66,6 +82,7 @@
    void act('answer',text);
  };
  toggle.addEventListener('click',()=>{
+   if(pendingGreeting&&!greetingPlayed){host.hidden=false;toggle.setAttribute('aria-expanded','true');userGesture();return;}
    const visible=host.hidden;host.hidden=!visible;toggle.setAttribute('aria-expanded',String(visible));
    if(visible){question.focus();}
  });
@@ -88,7 +105,7 @@
  const userGesture=()=>{
    if(!pendingGreeting||busy||greetingPlayed)return;
    if(audio){
-     audio.play().then(()=>{greetingPlayed=true;pendingGreeting='';welcomeButton.hidden=true;if(welcomeKey)sessionStorage.setItem(welcomeKey,'played');sayStatus('Falando…');}).catch(()=>{welcomeButton.hidden=false;});
+     audio.play().then(welcomeStarted).catch(()=>showVoiceAction('A reprodução foi bloqueada. Clique em Ouvir recepção e permita áudio para este site.'));
    }else if(welcomeText)void playText(welcomeText,true);
  };
  document.addEventListener('pointerdown',e=>{
@@ -97,17 +114,17 @@
  },{passive:true});
  fetch('/chat.php?action=panel_voice',{credentials:'same-origin',cache:'no-store'})
    .then(r=>r.json()).then(data=>{
-     if(!data.ok){sayStatus(data.error||'Entre no painel novamente.');return;}
+     if(!data.ok){host.hidden=false;toggle.setAttribute('aria-expanded','true');sayStatus(data.error||'Entre no painel novamente.');return;}
      sayStatus(data.configured?'Voz conectada.':'Serviço de voz não configurado.');
      welcomeKey='suites.voice.greeting.'+host.dataset.greeting;
      welcomeText=data.greeting||'Olá. Como posso ajudar?';
-     if(!data.configured){append('Assistente','A recepção por voz está indisponível; o chat continua disponível.');return;}
-     if(sessionStorage.getItem(welcomeKey)!=='played'){
+     if(!data.configured){host.hidden=false;toggle.setAttribute('aria-expanded','true');append('Assistente','A recepção por voz está indisponível; o chat continua disponível.');return;}
+     if(!welcomePreviouslyPlayed()){
        pendingGreeting=welcomeText;
        append('Assistente',welcomeText);
        welcomeButton.hidden=false;
        void playText(welcomeText,true);
      }
-   }).catch(()=>sayStatus('Falha ao consultar serviço de voz.'));
+   }).catch(()=>{host.hidden=false;toggle.setAttribute('aria-expanded','true');sayStatus('Falha ao conectar à voz. Verifique a sessão ou tente novamente.');});
  window.addEventListener('pagehide',cleanAudio);
 })();
