@@ -325,7 +325,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     errorBox.textContent=msg;errorBox.hidden=false;
   };
   const api=async(action,data={})=>{
-    const res=await fetch('chat.php',{
+    const res=await fetch('/chat.php',{
       method:'POST',
       headers:{'Content-Type':'application/json','Accept':'application/json'},
       credentials:'same-origin',

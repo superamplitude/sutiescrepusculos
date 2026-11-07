@@ -20,7 +20,7 @@
    bubble.append(small,body);answer.appendChild(bubble);answer.scrollTop=answer.scrollHeight;
  };
  const post=async(kind,text,signal)=>{
-   const res=await fetch('chat.php?action=panel_voice',{method:'POST',credentials:'same-origin',cache:'no-store',signal,headers:{'Accept':'application/json'},body:new URLSearchParams({_csrf:csrf,kind,text})});
+   const res=await fetch('/chat.php?action=panel_voice',{method:'POST',credentials:'same-origin',cache:'no-store',signal,headers:{'Accept':'application/json'},body:new URLSearchParams({_csrf:csrf,kind,text})});
    if(!res.ok){let reason='Atendimento indisponível.';try{const data=await res.json();reason=data.error||reason;}catch{}throw Error(reason);}
    return res;
  };
@@ -95,7 +95,7 @@
    if(e.target.closest('[data-voice-greeting], [data-voice-send], [data-voice-close], [data-voice-mic], [data-voice-stop], [data-voice-repeat], [data-voice-test]'))return;
    userGesture();
  },{passive:true});
- fetch('chat.php?action=panel_voice',{credentials:'same-origin',cache:'no-store'})
+ fetch('/chat.php?action=panel_voice',{credentials:'same-origin',cache:'no-store'})
    .then(r=>r.json()).then(data=>{
      if(!data.ok){sayStatus(data.error||'Entre no painel novamente.');return;}
      sayStatus(data.configured?'Voz conectada.':'Serviço de voz não configurado.');
