@@ -23,6 +23,7 @@ header('Cache-Control: private, no-store, max-age=0');
 header('X-Content-Type-Options: nosniff');
 $p=(string)($_GET['p']??(Auth::user()?'dashboard':'login'));
 if($p==='')$p=Auth::user()?'dashboard':'login';
+$_GET['p']=$p;
 if(!is_file(dirname(__DIR__).'/config/config.php')){
  header('Location: /install.php',true,302);exit;
 }
