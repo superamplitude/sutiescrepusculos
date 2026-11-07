@@ -41,7 +41,7 @@ try {
  await page.setContent(html);
  const forms=page.locator('[data-reservation-inline-form]');
  assert.equal(await forms.count(),2);
- assert.equal(await forms.filter({visible:true}).count(),0,'Status/reason fields must not render before Editar');
+ assert.equal(await page.locator('[data-reservation-inline-form]:visible').count(),0,'Status/reason fields must not render before Editar');
  assert.equal(await page.locator('tr.reservation-list-row').count(),3,'Existing reservation rows must stay visible');
  assert.equal(await page.locator('th').count(),6,'Preserve six informational columns');
  assert.equal(await page.locator('tr.reservation-list-row').first().getByText('Ver ficha').count(),1,'Closed reservation must keep accessible details');
