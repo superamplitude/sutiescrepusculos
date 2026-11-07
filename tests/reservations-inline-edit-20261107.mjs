@@ -64,22 +64,19 @@ try {
  assert(await page.locator('#reservationStatusForm3').isVisible());
  await page.keyboard.press('Escape');
  assert(!await page.locator('#reservationStatusForm3').isVisible(),'Escape must dismiss inline editor');
- // The guest name still opens the pre-existing full reservation detail modal.
- await page.locator('tr.reservation-list-row').first().locator('[data-reservation-open]').first().click();
- assert(await page.locator('#reservationOverlay').evaluate(e=>e.matches(':modal')),'Guest link must still open detail overlay');
- const src=await page.locator('.reservation-overlay-frame').getAttribute('src');
- assert(src.includes('embed=1')&&src.includes('id=1'));
+ // Verify mobile inline editing before opening the guest modal, which refreshes on close.
  await page.setViewportSize({width:390,height:760});
- await page.keyboard.press('Escape');
- await page.waitForLoadState('load');
- // Reload on closing overlay is expected; restore the same synthetic UI for mobile layout.
- await page.setContent(html);
- await page.addScriptTag({content:js});
  const mobileToggle=page.locator('tr.reservation-list-row').nth(1).locator('[data-reservation-edit-toggle]');
  await mobileToggle.click();
  assert(await page.locator('#reservationStatusForm2').isVisible());
  const screenOverflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);
  assert.equal(screenOverflow,false,'Mobile list must not overflow horizontally');
+ await mobileToggle.click();
+ // The guest name still opens the pre-existing full reservation detail modal.
+ await page.locator('tr.reservation-list-row').first().locator('[data-reservation-open]').first().click();
+ assert(await page.locator('#reservationOverlay').evaluate(e=>e.matches(':modal')),'Guest link must still open detail overlay');
+ const src=await page.locator('.reservation-overlay-frame').getAttribute('src');
+ assert(src.includes('embed=1')&&src.includes('id=1'));
  assert.deepEqual(errors,[],'No browser JS runtime errors');
  console.log('RESERVATION_INLINE_EDIT_QA_OK: information shown, status/reason hidden until Editar in same row, independent rows, Escape, POST values, guest overlay and mobile');
 }finally{await browser.close();}
