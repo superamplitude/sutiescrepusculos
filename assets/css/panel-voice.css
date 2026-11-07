@@ -22,3 +22,10 @@
 .suites-voice-panel .suites-greeting-play{align-self:flex-start;min-height:28px;border:1px solid #78afa0;background:#f0faf5;color:#124d3b;border-radius:8px;padding:4px 10px;font-size:12px}
 .suites-voice-panel .suites-greeting-play[hidden]{display:none!important}
 @media(max-width:600px){.suites-voice-panel{height:min(445px,calc(100dvh - 105px))}}
+
+/* Visible, accessible browser autoplay recovery on the existing chat launcher. */
+.suites-voice-toggle.needs-voice-gesture{
+ background:#e87819!important;color:#fff!important;border-color:#b9570b!important;
+ box-shadow:0 7px 20px rgba(110,55,10,.28)!important;
+}
+.suites-voice-toggle.needs-voice-gesture:hover{background:#bf5e0d!important}
