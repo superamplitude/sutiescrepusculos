@@ -19,7 +19,7 @@ final class PanelAgentService {
         'room_update'=>'rooms.manage','content_manage'=>'content.publish',
         'tariff_create'=>'prices.edit','package_create'=>'prices.edit',
         'tariff_toggle'=>'prices.edit','package_toggle'=>'prices.edit',
-        'promotion_manage'=>'content.publish','knowledge_manage'=>'ai.use',
+        'promotion_manage'=>'content.publish','knowledge_manage'=>'site.manage',
         'reservation_status'=>'reservations.manage','media_manage'=>'content.publish',
         'room_amenity_toggle'=>'rooms.manage','site_setting'=>'site.manage','media_cover'=>'property.edit','service_correction'=>'property.edit'
     ];
@@ -28,7 +28,7 @@ final class PanelAgentService {
         return is_array($p)&&((int)($p['at']??0)>time()-600)?$p:null;
     }
     public function respond(string $question):array {
-        if(!Auth::can('ai.use'))throw new \RuntimeException('Sem autorização para usar a IA.');
+        if(!(Auth::isAdmin() || Auth::isSuperAdmin()) || !Auth::can('ai.use'))throw new \RuntimeException('Sem autorização para usar a IA.');
         unset($_SESSION['_suites_agent_pending']);
         $pdo=DB::pdo();
         $property=BusinessContextService::property();
@@ -36,7 +36,7 @@ final class PanelAgentService {
         foreach(['name','category','short_description','description','city','state','address','address_number','neighborhood','zip','map_url','latitude','longitude','phone','whatsapp','checkin','checkout','cancellation_policy','house_rules'] as $field) {
             if(isset($property[$field]))$prop[$field]=mb_substr((string)$property[$field],0,300);
         }
-        $permissions=[];foreach(self::PERMISSIONS as $action=>$permission)if(Auth::can($permission))$permissions[]=$action;
+        $permissions=[];foreach(self::PERMISSIONS as $action=>$permission)if(Auth::can($permission) && ($action!=='knowledge_manage'||Auth::isSuperAdmin()))$permissions[]=$action;
         $input=['authorized_types'=>$permissions,'property'=>$prop,'question'=>$question];
         if(Auth::can('site.manage')){
             $input['site_public_settings']=['site_name'=>\App\Core\Site::get('site_name'),'tagline'=>\App\Core\Site::get('tagline'),'chat_agent_name'=>\App\Core\Site::get('chat_agent_name'),'chat_welcome'=>\App\Core\Site::get('chat_welcome'),'footer_text'=>\App\Core\Site::get('footer_text')];
@@ -286,7 +286,7 @@ final class PanelAgentService {
         if(!$pending||!hash_equals((string)$pending['token'],$token))throw new \RuntimeException('Confirmação expirada. Solicite a alteração novamente.');
         unset($_SESSION['_suites_agent_pending']);
         $a=$pending['action'];$type=$a['type'];
-        if(!Auth::can(self::PERMISSIONS[$type]))throw new \RuntimeException('Sem permissão para esta operação.');
+        if(($type==='knowledge_manage'&&!Auth::isSuperAdmin()) || !Auth::can(self::PERMISSIONS[$type]))throw new \RuntimeException('Sem permissão para esta operação.');
         self::validate($a);
         $pdo=DB::pdo();$id=0;
         if($type==='service_correction'){
