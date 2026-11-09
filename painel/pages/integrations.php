@@ -4,7 +4,8 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
 
   Auth::requireSuperAdmin();
   if($_SERVER['REQUEST_METHOD']==='POST'){
-    Csrf::check();$type=$_POST['type'];$cfg=$_POST['cfg']??[];
+    Csrf::check();$type=(string)($_POST['type']??'');$cfg=$_POST['cfg']??[];
+    if(!in_array($type,['pix','instagram','email','ical','maps'],true)||!is_array($cfg))throw new RuntimeException('Integração ou configuração inválida.');
     $q=$pdo->prepare("SELECT config_json FROM integrations WHERE type=?");$q->execute([$type]);$current=json_decode($q->fetchColumn()?:'{}',true)?:[];$clean=$current;
     foreach($cfg as $k=>$v){
       $isSecret=str_ends_with($k,'password')||str_contains($k,'token')||str_contains($k,'secret')||str_contains($k,'key');
@@ -17,10 +18,10 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   $rows=$pdo->query("SELECT * FROM integrations WHERE type<>'whatsapp' ORDER BY FIELD(type,'pix','instagram','email','ical','maps'),type")->fetchAll();$by=[];foreach($rows as $r)$by[$r['type']]=$r;
   $definitions=[
     'pix'=>['title'=>'PIX','desc'=>'Gateway de pagamento. Não ativa cobrança automática sem credenciais reais.','fields'=>['provider'=>'Provedor (ex.: Mercado Pago / Efí)','access_token'=>'Access Token / credencial','public_key'=>'Public Key, se houver','webhook_secret'=>'Segredo do webhook','pix_key'=>'Chave PIX da pousada, quando aplicável']],
-    'instagram'=>['title'=>'Instagram','desc'=>'Mensagens autorizadas via plataforma Meta.','fields'=>['instagram_account_id'=>'Instagram Account ID','page_id'=>'Facebook Page ID vinculado','access_token'=>'Access Token','verify_token'=>'Token de verificação do webhook']],
+    'instagram'=>['title'=>'Meta · Facebook e Instagram','desc'=>'Campos para Meta Business, páginas, Instagram e API oficial. Salvar não autoriza publicação nem comprova conexão; requer permissões e teste OAuth/API.','fields'=>['instagram_account_id'=>'Instagram Business Account ID','page_id'=>'Facebook Page ID vinculado','business_id'=>'Meta Business ID','app_id'=>'Meta App ID','app_secret'=>'Meta App Secret','access_token'=>'Page Access Token / Token de acesso','verify_token'=>'Token de verificação do webhook','ad_account_id'=>'Meta Ads Account ID']],
     'email'=>['title'=>'E-mail SMTP','desc'=>'Servidor para notificações transacionais.','fields'=>['host'=>'Servidor SMTP','port'=>'Porta','encryption'=>'Segurança (ssl/tls)','username'=>'Usuário','password'=>'Senha','from_email'=>'E-mail remetente','from_name'=>'Nome do remetente']],
     'ical'=>['title'=>'iCal','desc'=>'Sincronização de calendários por unidade.','fields'=>['sync_mode'=>'Modo (manual/cron)','cron_secret'=>'Segredo do cron','notes'=>'Observações de configuração']],
-    'maps'=>['title'=>'Mapa','desc'=>'Mapa/localização. OpenStreetMap pode funcionar sem chave; Google Maps exige API Key.','fields'=>['provider'=>'Provedor (OpenStreetMap/Google)','api_key'=>'API Key, se necessária']]
+    'maps'=>['title'=>'Google · Maps, Analytics, Search Console e SEO','desc'=>'Configurações do Google; cada produto requer API habilitada, permissões e homologação específica. Não enviar chaves para o navegador.','fields'=>['provider'=>'Provedor de mapas (OpenStreetMap/Google)','api_key'=>'Google Maps API Key','ga4_measurement_id'=>'GA4 Measurement ID (G-...)','gtm_container_id'=>'Google Tag Manager ID (GTM-...)','search_console_site_url'=>'Search Console: URL verificada da propriedade','google_site_verification'=>'Código de verificação Google','google_service_account_key'=>'Credencial de serviço Google (somente se exigida)']]
   ];
   $h=adminTitle('Integrações','Campos próprios por serviço. Nenhuma integração aparece como homologada sem teste real.').'<div class=cards integrations-grid>';
   foreach($definitions as $type=>$def){$r=$by[$type]??['enabled'=>0,'status'=>'not_configured','config_json'=>''];$cfg=json_decode($r['config_json']?:'{}',true)?:[];$h.='<form method=post class=card>'.Csrf::field().'<input type=hidden name=type value="'.U::e($type).'"><h2>'.U::e($def['title']).'</h2><p>'.U::e($def['desc']).'</p><p>Status: <span class=status-badge>'.U::e(statusPt($r['status'])).'</span></p>'.row('Habilitar','enabled',$r['enabled'],'checkbox');foreach($def['fields'] as $key=>$lab){$isSecret=str_contains($key,'password')||str_contains($key,'token')||str_contains($key,'secret')||str_contains($key,'key');$value=$isSecret?'':($cfg[$key]??'');$h.=row($lab,"cfg[$key]",$value,$isSecret?'password':'text');}$h.='<button>Salvar configuração</button></form>';}
