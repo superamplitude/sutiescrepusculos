@@ -214,7 +214,7 @@ body.reservation-embed .card h2{font-size:15px}
   </section>
 </div>
 <?php endif;?>
-<?php if(!Auth::user() && !empty($siteSettings['custom_css'])):?><style><?=str_replace('</style','<\/style',(string)$siteSettings['custom_css'])?></style><?php endif;?><?php $jsV=@filemtime(__DIR__.'/../../assets/js/app.js')?:time(); ?><script src="/assets/js/app.js?v=<?=$jsV?>"></script><?php if($inAdminPanel && !(($_GET['p']??'')==='reservation_edit' && ($_GET['embed']??'')==='1')): if(empty($_SESSION['_panel_voice_greeting']))$_SESSION['_panel_voice_greeting']=bin2hex(random_bytes(8)); ?>
+<?php if(!Auth::user() && !empty($siteSettings['custom_css'])):?><style><?=str_replace('</style','<\/style',(string)$siteSettings['custom_css'])?></style><?php endif;?><?php $jsV=@filemtime(__DIR__.'/../../assets/js/app.js')?:time(); ?><script src="/assets/js/app.js?v=<?=$jsV?>"></script><?php if($inAdminPanel && (Auth::isAdmin()||Auth::isSuperAdmin()) && Auth::can('ai.use') && !(($_GET['p']??'')==='reservation_edit' && ($_GET['embed']??'')==='1')): if(empty($_SESSION['_panel_voice_greeting']))$_SESSION['_panel_voice_greeting']=bin2hex(random_bytes(8)); ?>
 <link rel="stylesheet" href="/assets/css/panel-voice.css?v=20261107welcome">
 <button type="button" id="suitesVoiceToggle" class="suites-voice-toggle" aria-expanded="false" aria-controls="suitesPanelVoice">💬 Falar com IA</button>
 <section id="suitesPanelVoice" class="suites-voice-panel" data-greeting="<?=U::e($_SESSION['_panel_voice_greeting'])?>" hidden aria-label="Chat e voz">
