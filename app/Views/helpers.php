@@ -13,7 +13,7 @@ function render(string $title,string $html,string $meta=''):void{
     $names=array_keys($list);
     usort($names,static fn($a,$b)=>strlen($b)<=>strlen($a));
     foreach($names as $name){
-      $target=$list[$name]['access']==='admin'?'/painel/?p='.$name:'/index.php?p='.$name;
+      $target=$list[$name]['access']==='admin'?'/painel/'.$name.'.php':'/index.php?p='.$name;
       $content=preg_replace('~(?<![a-zA-Z0-9/])index\.php\?p='.preg_quote($name,'~').'(?=[&"\'\s<>#]|$)~',$target,$content);
     }
     $content=preg_replace('~\b(src|href|poster)=(["\'])((?:assets|storage)/)~','$1=$2/$3',$content);
