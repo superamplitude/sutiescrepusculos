@@ -10,7 +10,7 @@ try{
  await page.setContent('<button id="suitesVoiceToggle" aria-expanded="false">Falar com IA</button><section id="suitesPanelVoice" hidden data-greeting="qa-greeting-retry-20261109"><input name="_csrf" value="qa"><p data-voice-status></p><button data-voice-greeting hidden>Ouvir recepção</button><div data-voice-answer></div><div data-agent-confirm-box hidden><span data-agent-confirm-text></span><button data-agent-confirm>Confirmar</button><button data-agent-cancel>Cancelar</button></div><textarea></textarea><button data-voice-send>Enviar</button><button data-voice-close>Fechar</button><button data-voice-repeat>Repetir</button><button data-voice-stop>Parar</button><button data-voice-test>Teste</button><button data-voice-mic>Microfone</button></section>');
  await page.evaluate(()=>{
   window.__plays=0;window.__posts=0;window.__gesture=false;
-  document.addEventListener('click',()=>{window.__gesture=true;},true);
+  document.addEventListener('click',()=>{window.__gesture=true;setTimeout(()=>{window.__gesture=false;},0);},true);
   window.Audio=class{
    constructor(src){this.src=src;this.handlers={};}
    addEventListener(name,fn){this.handlers[name]=fn;}
