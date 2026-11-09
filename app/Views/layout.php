@@ -226,6 +226,6 @@ body.reservation-embed .card h2{font-size:15px}
   <label class="suites-voice-compose"><span class="sr-only">Mensagem</span><textarea maxlength="550" placeholder="Escreva sua mensagem…" rows="2"></textarea></label>
   <div class="suites-voice-actions"><button type="button" class="suites-send" data-voice-send>Enviar</button><button type="button" data-voice-mic>🎙 Microfone</button><button type="button" data-voice-repeat>↻ Repetir</button><button type="button" data-voice-stop>■ Parar</button><button type="button" data-voice-test>▶ Teste</button></div>
 </section>
-<script defer src="/assets/js/panel-voice.js?v=20261109greetingretry"></script>
+<script defer src="/assets/js/panel-voice.js?v=20261109webaudio"></script>
 <?php endif;?>
 </body></html>
