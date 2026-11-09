@@ -29,6 +29,7 @@ try{
  await page.waitForFunction(()=>window.__posts===1);
  await page.locator('#suitesVoiceToggle').click(); // user gesture while synthesis is in flight
  await page.waitForFunction(()=>document.querySelector('[data-voice-status]')?.textContent?.includes('Preparando'));
+ await page.waitForFunction(()=>window.__plays===1);
  await page.waitForFunction(()=>document.querySelector('#suitesVoiceToggle')?.classList.contains('needs-voice-gesture'));
  assert(await page.locator('[data-voice-greeting]').isVisible());
  await page.locator('[data-voice-greeting]').click();
