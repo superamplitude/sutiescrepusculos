@@ -1,4 +1,4 @@
-<?php use App\Core\U; use App\Core\Auth; use App\Core\Site; $siteSettings=Site::all(); $siteLayout=(string)($siteSettings['layout_variant']??'layout1'); $siteLogo=(string)($siteSettings['logo_path']??''); ?>
+<?php use App\Core\U; use App\Core\Auth; use App\Core\Site; $siteSettings=Site::all(); $siteLayout=(string)($siteSettings['layout_variant']??'layout1'); $siteLogo=(string)($siteSettings['logo_path']??''); $inAdminPanel=defined('SUITES_PANEL_ENTRY') && (bool)Auth::user(); ?>
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?=U::e($title??'Pousada IA')?></title><?php if(!empty($metaDescription)):?><meta name="description" content="<?=U::e($metaDescription)?>"><?php endif;?><?php if(!empty($siteSettings['favicon_path'])):?><link rel="icon" href="<?=U::e($siteSettings['favicon_path'])?>"><?php endif;?><?php $cssV=@filemtime(__DIR__.'/../../assets/css/app.css')?:time(); ?><style id="crepusculo-room-actions">
 .table-actions{display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:nowrap!important;white-space:nowrap!important}
@@ -23,7 +23,7 @@
 .table-actions a.btn.secondary.small:hover{background:#218838!important}
 .table-actions .danger.small:hover,
 .table-actions button.danger.small:hover{background:#dc6508!important}
-</style><link rel="stylesheet" href="/assets/css/app.css?v=<?=$cssV?>"><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='messages')): ?><link rel="stylesheet" href="/assets/css/unified-inbox.css?v=20261106"><?php endif; ?><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='hero')): ?><link rel="stylesheet" href="/assets/css/hero-admin.css?v=20261106-center"><?php endif; ?><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='gallery')): ?><link rel="stylesheet" href="/assets/css/gallery-admin.css?v=20261106b"><?php endif; ?><?php if(\App\Core\Auth::user() && in_array(($_GET['p']??''),['rooms','room_manage'],true)): ?><link rel="stylesheet" href="/assets/css/rooms-admin.css?v=20261106-amenities"><?php endif; ?><style>:root{--site-primary:<?=U::e(Site::color('primary_color','#0d756d'))?>;--site-secondary:<?=U::e(Site::color('secondary_color','#173f3b'))?>;--site-accent:<?=U::e(Site::color('accent_color','#bf8d39'))?>;--site-body-font:'<?=U::e(Site::font('body_font','Inter'))?>';--site-heading-font:'<?=U::e(Site::font('heading_font','Georgia'))?>';}</style><?php if(\App\Core\Auth::user() && in_array(($_GET['p']??''),['rooms','room_manage'],true)): ?><script defer src="/assets/js/rooms-admin.js?v=20261106e"></script><?php endif; ?><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='reservations')): ?><link rel="stylesheet" href="/assets/css/reservations-overlay.css?v=20261107b"><script defer src="/assets/js/reservations-overlay.js?v=20261107b"></script><?php endif; ?><?php if(\App\Core\Auth::user() && (($_GET['p']??'')==='reservation_edit') && (($_GET['embed']??'')==='1')): ?><style>
+</style><link rel="stylesheet" href="/assets/css/app.css?v=<?=$cssV?>"><?php if($inAdminPanel && (($_GET['p']??'')==='messages')): ?><link rel="stylesheet" href="/assets/css/unified-inbox.css?v=20261106"><?php endif; ?><?php if($inAdminPanel && (($_GET['p']??'')==='hero')): ?><link rel="stylesheet" href="/assets/css/hero-admin.css?v=20261106-center"><?php endif; ?><?php if($inAdminPanel && (($_GET['p']??'')==='gallery')): ?><link rel="stylesheet" href="/assets/css/gallery-admin.css?v=20261106b"><?php endif; ?><?php if($inAdminPanel && in_array(($_GET['p']??''),['rooms','room_manage'],true)): ?><link rel="stylesheet" href="/assets/css/rooms-admin.css?v=20261106-amenities"><?php endif; ?><style>:root{--site-primary:<?=U::e(Site::color('primary_color','#0d756d'))?>;--site-secondary:<?=U::e(Site::color('secondary_color','#173f3b'))?>;--site-accent:<?=U::e(Site::color('accent_color','#bf8d39'))?>;--site-body-font:'<?=U::e(Site::font('body_font','Inter'))?>';--site-heading-font:'<?=U::e(Site::font('heading_font','Georgia'))?>';}</style><?php if($inAdminPanel && in_array(($_GET['p']??''),['rooms','room_manage'],true)): ?><script defer src="/assets/js/rooms-admin.js?v=20261106e"></script><?php endif; ?><?php if($inAdminPanel && (($_GET['p']??'')==='reservations')): ?><link rel="stylesheet" href="/assets/css/reservations-overlay.css?v=20261107b"><script defer src="/assets/js/reservations-overlay.js?v=20261107b"></script><?php endif; ?><?php if($inAdminPanel && (($_GET['p']??'')==='reservation_edit') && (($_GET['embed']??'')==='1')): ?><style>
 body.reservation-embed{background:#fff!important;min-width:0!important}
 body.reservation-embed .admin-sidebar,body.reservation-embed .admin-topbar,body.reservation-embed .suites-voice-toggle,body.reservation-embed .suites-voice-panel{display:none!important}
 body.reservation-embed .admin-shell{margin-left:0!important;min-height:0!important;width:100%!important}
@@ -35,8 +35,8 @@ body.reservation-embed .card{margin-bottom:12px!important;padding:15px!important
 body.reservation-embed .card h2{font-size:15px}
 @media(max-width:640px){body.reservation-embed .reservation-edit-grid{grid-template-columns:1fr}}
 </style><?php endif; ?></head>
-<body class="<?=Auth::user()?('admin-mode'.((($_GET['p']??'')==='reservation_edit'&&($_GET['embed']??'')==='1')?' reservation-embed':'')):'public-mode '.U::e($siteLayout)?>">
-<?php if(Auth::user()): ?>
+<body class="<?=$inAdminPanel?('admin-mode'.((($_GET['p']??'')==='reservation_edit'&&($_GET['embed']??'')==='1')?' reservation-embed':'')):'public-mode '.U::e($siteLayout)?>">
+<?php if($inAdminPanel): ?>
 <aside class="admin-sidebar">
   <div class="admin-brand">
     <?php if($siteLogo):?><img class="admin-brand-logo" src="<?=U::e(preg_match('~^(?:assets|storage)/~',(string)$siteLogo)?'/'.$siteLogo:$siteLogo)?>" alt="Logomarca"><?php else:?><span class="admin-brand-mark">B</span><?php endif;?>
@@ -45,47 +45,53 @@ body.reservation-embed .card h2{font-size:15px}
 
   <nav class="admin-nav">
     <?php $adminPage=(($_GET['p']??'')==='room_manage')?'rooms':($_GET['p']??'dashboard'); ?>
-    <a href="/painel/?p=dashboard" class="admin-dashboard-link <?=$adminPage==='dashboard'?'active':''?>">⌂ <span><?=Auth::isSuperAdmin()?'Painel Mestre':'Dashboard'?></span></a>
+    <a href="/painel/dashboard.php" class="admin-dashboard-link <?=$adminPage==='dashboard'?'active':''?>">⌂ <span><?=Auth::isSuperAdmin()?'Painel Mestre':'Dashboard'?></span></a>
 
     <details name="admin-menu" class="admin-nav-group" <?=in_array($adminPage,['property','hero','rooms','tariffs','promotions','gallery','attractions'],true)?'open':''?>>
       <summary>Estabelecimento</summary>
       <div class="admin-nav-group-links">
-        <a href="/painel/?p=property" class="admin-subitem <?=$adminPage==='property'?'active':''?>"><span class="nav-dot"></span><span>Informações do Estabelecimento</span></a>
-        <a href="/painel/?p=hero" class="<?=$adminPage==='hero'?'active':''?>"><span class="nav-dot"></span><span>Editor do Hero</span></a>
-        <a href="/painel/?p=rooms" class="<?=$adminPage==='rooms'?'active':''?>"><span class="nav-dot"></span><span>Quartos / Unidades</span></a>
-        <a href="/painel/?p=gallery" class="<?=$adminPage==='gallery'?'active':''?>"><span class="nav-dot"></span><span>Galeria</span></a>
-        <a href="/painel/?p=attractions" class="<?=$adminPage==='attractions'?'active':''?>"><span class="nav-dot"></span><span>Atrações</span></a>
+        <a href="/painel/property.php" class="admin-subitem <?=$adminPage==='property'?'active':''?>"><span class="nav-dot"></span><span>Informações do Estabelecimento</span></a>
+        <a href="/painel/hero.php" class="<?=$adminPage==='hero'?'active':''?>"><span class="nav-dot"></span><span>Editor do Hero</span></a>
+        <a href="/painel/rooms.php" class="<?=$adminPage==='rooms'?'active':''?>"><span class="nav-dot"></span><span>Quartos / Unidades</span></a>
+        <a href="/painel/gallery.php" class="<?=$adminPage==='gallery'?'active':''?>"><span class="nav-dot"></span><span>Galeria</span></a>
+        <a href="/painel/attractions.php" class="<?=$adminPage==='attractions'?'active':''?>"><span class="nav-dot"></span><span>Atrações</span></a>
       </div>
     </details>
 
-    <details name="admin-menu" class="admin-nav-group" <?=in_array($adminPage,['reservations','map','guests','payments'],true)?'open':''?>>
+    <details name="admin-menu" class="admin-nav-group" <?=in_array($adminPage,['reservations','map','guests','payments','comandas','livro_caixa'],true)?'open':''?>>
       <summary>Reservas</summary>
       <div class="admin-nav-group-links">
-        <a href="/painel/?p=reservations" class="<?=$adminPage==='reservations'?'active':''?>"><span class="nav-dot"></span><span>Reservas</span></a>
-        <a href="/painel/?p=map" class="<?=$adminPage==='map'?'active':''?>"><span class="nav-dot"></span><span>Mapa de Reservas</span></a>
-        <a href="/painel/?p=guests" class="<?=$adminPage==='guests'?'active':''?>"><span class="nav-dot"></span><span>Hóspedes</span></a>
-        <a href="/painel/?p=payments" class="<?=$adminPage==='payments'?'active':''?>"><span class="nav-dot"></span><span>Pagamentos / PIX</span></a>
+        <a href="/painel/reservations.php" class="<?=$adminPage==='reservations'?'active':''?>"><span class="nav-dot"></span><span>Reservas</span></a>
+        <a href="/painel/map.php" class="<?=$adminPage==='map'?'active':''?>"><span class="nav-dot"></span><span>Mapa de Reservas</span></a>
+        <a href="/painel/guests.php" class="<?=$adminPage==='guests'?'active':''?>"><span class="nav-dot"></span><span>Hóspedes</span></a>
+        <a href="/painel/payments.php" class="<?=$adminPage==='payments'?'active':''?>"><span class="nav-dot"></span><span>Pagamentos / PIX</span></a>
+        <?php if(Auth::isAdmin()||Auth::isSuperAdmin()||Auth::can('reservations.manage')):?>
+        <a href="/painel/comandas.php" class="<?=$adminPage==='comandas'?'active':''?>"><span class="nav-dot"></span><span>Comandas / Consumo</span></a>
+        <?php endif;?>
+        <?php if(Auth::isAdmin()||Auth::isSuperAdmin()||Auth::can('payments.view')):?>
+        <a href="/painel/livro_caixa.php" class="<?=$adminPage==='livro_caixa'?'active':''?>"><span class="nav-dot"></span><span>Livro Caixa</span></a>
+        <?php endif;?>
       </div>
     </details>
 
     <details name="admin-menu" class="admin-nav-group" <?=in_array($adminPage,['messages','whatsapp_rnl','contacts_admin','content','reviews'],true)?'open':''?>>
       <summary>Atendimento e conteúdo</summary>
       <div class="admin-nav-group-links">
-        <a href="/painel/?p=messages" class="<?=$adminPage==='messages'?'active':''?>"><span class="nav-dot"></span><span>Atendimento</span></a>
-        <a href="/painel/?p=whatsapp_rnl" class="<?=$adminPage==='whatsapp_rnl'?'active':''?>"><span class="nav-dot"></span><span>WhatsApp</span></a>
-        <a href="/painel/?p=contacts_admin" class="<?=$adminPage==='contacts_admin'?'active':''?>"><span class="nav-dot"></span><span>Contatos do site</span></a>
-        <a href="/painel/?p=content" class="<?=$adminPage==='content'?'active':''?>"><span class="nav-dot"></span><span>Conteúdo / SEO</span></a>
-        <a href="/painel/?p=reviews" class="<?=$adminPage==='reviews'?'active':''?>"><span class="nav-dot"></span><span>Avaliações</span></a>
+        <a href="/painel/messages.php" class="<?=$adminPage==='messages'?'active':''?>"><span class="nav-dot"></span><span>Atendimento</span></a>
+        <a href="/painel/whatsapp_rnl.php" class="<?=$adminPage==='whatsapp_rnl'?'active':''?>"><span class="nav-dot"></span><span>WhatsApp</span></a>
+        <a href="/painel/contacts_admin.php" class="<?=$adminPage==='contacts_admin'?'active':''?>"><span class="nav-dot"></span><span>Contatos do site</span></a>
+        <a href="/painel/content.php" class="<?=$adminPage==='content'?'active':''?>"><span class="nav-dot"></span><span>Conteúdo / SEO</span></a>
+        <a href="/painel/reviews.php" class="<?=$adminPage==='reviews'?'active':''?>"><span class="nav-dot"></span><span>Avaliações</span></a>
       </div>
     </details>
 
     <details name="admin-menu" class="admin-nav-group" <?=in_array($adminPage,['ai','voice_settings','reports','integrations'],true)?'open':''?>>
       <summary>IA e resultados</summary>
       <div class="admin-nav-group-links">
-        <a href="/painel/?p=ai" class="<?=$adminPage==='ai'?'active':''?>"><span class="nav-dot"></span><span>Inteligência Artificial</span></a>
-        <a href="/painel/?p=voice_settings" class="<?=$adminPage==='voice_settings'?'active':''?>"><span class="nav-dot"></span><span>Voz e atendimento</span></a>
-        <a href="/painel/?p=reports" class="<?=$adminPage==='reports'?'active':''?>"><span class="nav-dot"></span><span>Relatórios</span></a>
-        <?php if(Auth::isSuperAdmin()):?><a href="/painel/?p=integrations" class="<?=$adminPage==='integrations'?'active':''?>"><span class="nav-dot"></span><span>Integrações</span></a><?php endif;?>
+        <a href="/painel/ai.php" class="<?=$adminPage==='ai'?'active':''?>"><span class="nav-dot"></span><span>Inteligência Artificial</span></a>
+        <a href="/painel/voice_settings.php" class="<?=$adminPage==='voice_settings'?'active':''?>"><span class="nav-dot"></span><span>Voz e atendimento</span></a>
+        <a href="/painel/reports.php" class="<?=$adminPage==='reports'?'active':''?>"><span class="nav-dot"></span><span>Relatórios</span></a>
+        <?php if(Auth::isSuperAdmin()):?><a href="/painel/integrations.php" class="<?=$adminPage==='integrations'?'active':''?>"><span class="nav-dot"></span><span>Integrações</span></a><?php endif;?>
       </div>
     </details>
 
@@ -93,9 +99,9 @@ body.reservation-embed .card h2{font-size:15px}
     <details name="admin-menu" class="admin-nav-group" <?=in_array($adminPage,['site_admin','users','audit'],true)?'open':''?>>
       <summary>Controle Total</summary>
       <div class="admin-nav-group-links">
-        <a href="/painel/?p=site_admin" class="<?=$adminPage==='site_admin'?'active':''?>"><span class="nav-dot"></span><span>Editor Global do Site</span></a>
-        <a href="/painel/?p=users" class="<?=$adminPage==='users'?'active':''?>"><span class="nav-dot"></span><span>Usuários</span></a>
-        <a href="/painel/?p=audit" class="<?=$adminPage==='audit'?'active':''?>"><span class="nav-dot"></span><span>Auditoria</span></a>
+        <a href="/painel/site_admin.php" class="<?=$adminPage==='site_admin'?'active':''?>"><span class="nav-dot"></span><span>Editor Global do Site</span></a>
+        <a href="/painel/users.php" class="<?=$adminPage==='users'?'active':''?>"><span class="nav-dot"></span><span>Usuários</span></a>
+        <a href="/painel/audit.php" class="<?=$adminPage==='audit'?'active':''?>"><span class="nav-dot"></span><span>Auditoria</span></a>
         <a href="demo.php"><span class="nav-dot"></span><span>Conteúdo Demo</span></a>
         <a href="sincronizar_demo.php"><span class="nav-dot"></span><span>Restaurar Mídia Demo</span></a>
         <a href="/diagnostico.php"><span class="nav-dot"></span><span>Diagnóstico</span></a>
@@ -157,8 +163,8 @@ body.reservation-embed .card h2{font-size:15px}
 <?php if($m=U::flash('err')):?><div class="alert error"><?=U::e($m)?></div><?php endif;?>
 <?=$content??''?>
 </main>
-<?php if(Auth::user()): ?></div><?php endif;?>
-<?php if(!Auth::user()): ?>
+<?php if($inAdminPanel): ?></div><?php endif;?>
+<?php if(!$inAdminPanel): ?>
 <footer class="portal-footer">
   <div class="footer-main">
     <div class="footer-brand">
