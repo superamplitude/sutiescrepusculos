@@ -21,7 +21,7 @@ final class PanelAgentService {
         'tariff_toggle'=>'prices.edit','package_toggle'=>'prices.edit',
         'promotion_manage'=>'content.publish','knowledge_manage'=>'ai.use',
         'reservation_status'=>'reservations.manage','media_manage'=>'content.publish',
-        'room_amenity_toggle'=>'rooms.manage','site_setting'=>'site.manage','media_cover'=>'property.edit'
+        'room_amenity_toggle'=>'rooms.manage','site_setting'=>'site.manage','media_cover'=>'property.edit','service_correction'=>'property.edit'
     ];
     private static function pending():?array {
         $p=$_SESSION['_suites_agent_pending']??null;
@@ -43,6 +43,19 @@ final class PanelAgentService {
             $ui=json_decode((string)\App\Core\Site::get('ui_json','{}'),true);$input['site_texts']=is_array($ui)?array_intersect_key($ui,array_flip(['hero_kicker','hero_title','hero_description','intro_title','footer_bottom','booking_cta','menu_home','menu_about','menu_accommodations','menu_gastronomy','menu_experiences','menu_offers','menu_contact','hero_primary_cta','hero_secondary_cta'])):[];
         }
         $lower=mb_strtolower($question);
+        // Deterministic correction: do not depend on Gemini availability for a fully
+        // specified instruction to disable absent services in the property settings.
+        $negation=(bool)preg_match('/n[aã]o\\s+(?:temos|tem|oferecemos|existe|h[aá])|sem\\s+(?:caf[eé]|piscina)|desativ|retir|remov|corrig/iu',$lower);
+        $breakfast=(bool)preg_match('/caf[eé]\\s+da\\s+manh[aã]|breakfast/iu',$lower);
+        $pool=(bool)preg_match('/piscina|pool/iu',$lower);
+        if($negation&&($breakfast||$pool)&&Auth::can('property.edit')){
+            $action=['type'=>'service_correction','breakfast'=>$breakfast,'pool'=>$pool];
+            [$clean,$label]=self::validate($action);
+            $token=bin2hex(random_bytes(12));
+            $_SESSION['_suites_agent_pending']=['at'=>time(),'token'=>$token,'action'=>$clean,'label'=>$label];
+            return ['answer'=>'Entendi: esses serviços não existem no estabelecimento. A correção desativa os itens no cadastro e as informações antigas da base que poderiam induzir o atendimento ao erro.\\nProposta: '.$label.'\\nA alteração ainda NÃO foi aplicada.','proposal'=>['token'=>$token,'label'=>$label]];
+        }
+
         if(preg_match('/di[aá]ria|pre[cç]o|tarifa|quarto|acomoda[cç][aã]o|su[ií]te|reserv|h[oó]sped|calend[aá]rio|mapa|bloque/iu',$lower)){
             $input['rooms']=$pdo->query("SELECT id,name,short_description,capacity,status,active,min_nights FROM rooms WHERE active=1 ORDER BY id LIMIT 35")->fetchAll(PDO::FETCH_ASSOC);
             $input['blocks']=$pdo->query("SELECT id,room_id,start_date,end_date,type FROM room_blocks WHERE end_date>=CURDATE() ORDER BY start_date LIMIT 35")->fetchAll(PDO::FETCH_ASSOC);
@@ -101,6 +114,11 @@ final class PanelAgentService {
     }
     private static function validate(array $action):array {
         $pdo=DB::pdo();$type=(string)($action['type']??'');$a=['type'=>$type];
+        if($type==='service_correction'){
+            $a['breakfast']=!empty($action['breakfast'])?1:0;$a['pool']=!empty($action['pool'])?1:0;
+            if(!$a['breakfast']&&!$a['pool'])throw new \RuntimeException('Nenhum serviço indicado.');
+            return [$a,'Desativar '.implode(' e ',array_filter([$a['breakfast']?'café da manhã':null,$a['pool']?'piscina':null])).' no estabelecimento e invalidar respostas antigas relacionadas'];
+        }
         if($type==='room_amenity_toggle'){
             $a['room_id']=(int)($action['room_id']??0);$a['amenity_id']=(int)($action['amenity_id']??0);$a['enabled']=!empty($action['enabled'])?1:0;
             $q=$pdo->prepare("SELECT r.name room_name,a.name amenity_name FROM rooms r JOIN amenities a ON a.id=? AND a.scope='room' AND a.active=1 WHERE r.id=? AND r.active=1");$q->execute([$a['amenity_id'],$a['room_id']]);$r=$q->fetch();
@@ -271,7 +289,22 @@ final class PanelAgentService {
         if(!Auth::can(self::PERMISSIONS[$type]))throw new \RuntimeException('Sem permissão para esta operação.');
         self::validate($a);
         $pdo=DB::pdo();$id=0;
-        if($type==='room_amenity_toggle'){
+        if($type==='service_correction'){
+            $pdo->beginTransaction();
+            try{
+                $patterns=[];
+                if($a['breakfast'])$patterns[]="caf[eé][[:space:]]+da[[:space:]]+manh[aã]|breakfast";
+                if($a['pool'])$patterns[]="piscina|pool";
+                foreach($patterns as $pattern){
+                    $q=$pdo->prepare("DELETE pa FROM property_amenities pa INNER JOIN amenities a ON a.id=pa.amenity_id WHERE pa.property_id=1 AND a.scope='property' AND LOWER(a.name) REGEXP ?");
+                    $q->execute([$pattern]);
+                    // Retain historical FAQ content, but disable stale service claims until edited.
+                    $q=$pdo->prepare('UPDATE knowledge_base SET active=0 WHERE active=1 AND (title REGEXP ? OR content REGEXP ?)');
+                    $q->execute([$pattern,$pattern]);
+                }
+                $pdo->commit();$id=1;
+            }catch(\Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
+        }elseif($type==='room_amenity_toggle'){
             $id=$a['room_id'];
             if($a['enabled'])$pdo->prepare('INSERT IGNORE INTO room_amenities(room_id,amenity_id) VALUES(?,?)')->execute([$id,$a['amenity_id']]);
             else $pdo->prepare('DELETE FROM room_amenities WHERE room_id=? AND amenity_id=?')->execute([$id,$a['amenity_id']]);
