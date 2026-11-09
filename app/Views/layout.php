@@ -88,7 +88,9 @@ body.reservation-embed .card h2{font-size:15px}
     <details name="admin-menu" class="admin-nav-group" <?=in_array($adminPage,['ai','voice_settings','reports','integrations'],true)?'open':''?>>
       <summary>IA e resultados</summary>
       <div class="admin-nav-group-links">
+        <?php if(Auth::isSuperAdmin()):?>
         <a href="/painel/ai.php" class="<?=$adminPage==='ai'?'active':''?>"><span class="nav-dot"></span><span>Inteligência Artificial</span></a>
+        <?php endif;?>
         <a href="/painel/voice_settings.php" class="<?=$adminPage==='voice_settings'?'active':''?>"><span class="nav-dot"></span><span>Voz e atendimento</span></a>
         <a href="/painel/reports.php" class="<?=$adminPage==='reports'?'active':''?>"><span class="nav-dot"></span><span>Relatórios</span></a>
         <?php if(Auth::isSuperAdmin()):?><a href="/painel/integrations.php" class="<?=$adminPage==='integrations'?'active':''?>"><span class="nav-dot"></span><span>Integrações</span></a><?php endif;?>
