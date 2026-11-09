@@ -23,8 +23,9 @@ final class GeminiService{
     try{$auth=json_decode((string)file_get_contents($file),true,512,JSON_THROW_ON_ERROR);}
     catch(\Throwable){return ['ok'=>false,'mode'=>'central','answer'=>$this->fallback($q),'error'=>'Credencial central inválida'];}
     $token=(string)($auth['token']??'');
-    $key=(string)($auth['provider_api_key']??'');
-    if($key==='')$key=Secret::decrypt((string)($c['api_key']??''));
+    // Prefer the already configured and validated textual Gemini credential.
+    $key=Secret::decrypt((string)($c['api_key']??''));
+    if($key==='')$key=(string)($auth['provider_api_key']??'');
     if($token===''||$key==='')return ['ok'=>false,'mode'=>'central','answer'=>$this->fallback($q),'error'=>'Projeto sem credenciais para IA'];
     $ctx=$includeKnowledge?$this->knowledge():'';
     $agent=trim((string)Site::get('chat_agent_name','Assistente IA'))?:'Assistente IA';
