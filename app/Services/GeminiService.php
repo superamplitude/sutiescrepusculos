@@ -8,6 +8,12 @@ final class GeminiService{
     $s=DB::pdo()->query("SELECT * FROM ai_config WHERE id=1");return $s->fetch()?:[];
   }
   public function ask(string $q,bool $includeKnowledge=true):array{
+    // A direct, verified service fact must not depend on external model availability.
+    // Administrative and conversation prompts are longer; those are handled by callers.
+    if($includeKnowledge && mb_strlen($q)<=500){
+      $fact=BusinessContextService::verifiedServiceAnswer($q);
+      if($fact!==null)return ['ok'=>true,'mode'=>'verified_property_fact','answer'=>$fact];
+    }
     $c=$this->config();$apiKey=Secret::decrypt($c['api_key']??'');
     if(empty($c['enabled'])||empty($apiKey))return ['ok'=>false,'mode'=>'fallback','answer'=>$this->fallback($q),'error'=>'Gemini não configurado'];
     if(!function_exists('curl_init'))return ['ok'=>false,'mode'=>'fallback','answer'=>$this->fallback($q),'error'=>'cURL indisponível'];
