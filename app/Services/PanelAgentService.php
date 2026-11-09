@@ -20,7 +20,8 @@ final class PanelAgentService {
         'tariff_create'=>'prices.edit','package_create'=>'prices.edit',
         'tariff_toggle'=>'prices.edit','package_toggle'=>'prices.edit',
         'promotion_manage'=>'content.publish','knowledge_manage'=>'ai.use',
-        'reservation_status'=>'reservations.manage','media_manage'=>'content.publish'
+        'reservation_status'=>'reservations.manage','media_manage'=>'content.publish',
+        'room_amenity_toggle'=>'rooms.manage','site_setting'=>'site.manage','media_cover'=>'property.edit'
     ];
     private static function pending():?array {
         $p=$_SESSION['_suites_agent_pending']??null;
@@ -37,6 +38,10 @@ final class PanelAgentService {
         }
         $permissions=[];foreach(self::PERMISSIONS as $action=>$permission)if(Auth::can($permission))$permissions[]=$action;
         $input=['authorized_types'=>$permissions,'property'=>$prop,'question'=>$question];
+        if(Auth::can('site.manage')){
+            $input['site_public_settings']=['site_name'=>\App\Core\Site::get('site_name'),'tagline'=>\App\Core\Site::get('tagline'),'chat_agent_name'=>\App\Core\Site::get('chat_agent_name'),'chat_welcome'=>\App\Core\Site::get('chat_welcome'),'footer_text'=>\App\Core\Site::get('footer_text')];
+            $ui=json_decode((string)\App\Core\Site::get('ui_json','{}'),true);$input['site_texts']=is_array($ui)?array_intersect_key($ui,array_flip(['hero_kicker','hero_title','hero_description','intro_title','footer_bottom','booking_cta','menu_home','menu_about','menu_accommodations','menu_gastronomy','menu_experiences','menu_offers','menu_contact','hero_primary_cta','hero_secondary_cta'])):[];
+        }
         $lower=mb_strtolower($question);
         if(preg_match('/di[aá]ria|pre[cç]o|tarifa|quarto|acomoda[cç][aã]o|su[ií]te|reserv|h[oó]sped|calend[aá]rio|mapa|bloque/iu',$lower)){
             $input['rooms']=$pdo->query("SELECT id,name,short_description,capacity,status,active,min_nights FROM rooms WHERE active=1 ORDER BY id LIMIT 35")->fetchAll(PDO::FETCH_ASSOC);
@@ -50,6 +55,7 @@ final class PanelAgentService {
             $input['packages']=$pdo->query("SELECT id,room_id,name,start_date,end_date,price,active FROM room_packages ORDER BY id DESC LIMIT 35")->fetchAll(PDO::FETCH_ASSOC);
         }
         if(preg_match('/caf[eé]|manh[aã]|comodidade|servi[cç]o|piscina|estacionamento|wi.fi/iu',$lower)){
+            $input['room_amenities']=$pdo->query("SELECT r.id room_id,r.name room_name,a.id amenity_id,a.name amenity_name,IF(ra.amenity_id IS NULL,0,1) AS enabled FROM rooms r JOIN amenities a ON a.scope='room' AND a.active=1 LEFT JOIN room_amenities ra ON ra.room_id=r.id AND ra.amenity_id=a.id WHERE r.active=1 ORDER BY r.id,a.name LIMIT 120")->fetchAll(PDO::FETCH_ASSOC);
             $input['property_amenities']=$pdo->query("SELECT a.id,a.name,IF(pa.amenity_id IS NULL,0,1) AS enabled FROM amenities a LEFT JOIN property_amenities pa ON pa.amenity_id=a.id AND pa.property_id=1 WHERE a.scope='property' AND a.active=1 ORDER BY a.name LIMIT 100")->fetchAll(PDO::FETCH_ASSOC);
         }
         if(preg_match('/marketing|promo[cç][aã]o|campanha|cupom|oferta/iu',$lower)){
@@ -64,7 +70,7 @@ final class PanelAgentService {
         if(preg_match('/reserv|h[oó]sped|check.in|check.out|entrada|sa[ií]da/iu',$lower)){
             $input['upcoming_reservations']=$pdo->query("SELECT r.id,r.code,r.room_id,r.checkin,r.checkout,r.status FROM reservations r WHERE r.checkout>=CURDATE() ORDER BY r.id DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC);
         }
-        $instructions="Você é a assistente virtual do painel de gestão. Converse em português brasileiro, com acolhimento e respostas curtas e naturais. Perguntas vagas como 'pode alterar uns detalhes?' devem ser respondidas normalmente, perguntando o que o gestor deseja modificar. NUNCA afirme que já alterou algo. Se o usuário pedir uma mudança com todos os dados, retorne JSON com 'answer' (texto breve) e 'action' (objeto); em dúvidas ou pedidos incompletos action=null. Nunca invente IDs, valores, disponibilidade ou confirmação de pagamento. A tarifa real da diária está em tariffs e o pacote em room_packages; room_price é apenas preço-base legado. Para pedidos de diária com tarifa identificada use tariff_price {tariff_id,price}; para pacote identificado use package_price {package_id,price}. Comodidade da pousada: amenity_toggle {amenity_id,enabled} para a lista property_amenities; o switch deve refletir no atendimento. SEO de página existente: seo_update {content_id,seo_title,meta_description}. Marketing: promotion_create {title,description,code,discount_type,discount_value,start_date,end_date}; o administrador precisa confirmar a criação. Texto visual do site: site_text {key,value}, key entre hero_title,hero_description,hero_kicker,intro_title,footer_bottom,booking_cta. Nunca prometa publicação em Google, Facebook ou Instagram sem conexão real. Adicionalmente: room_update {room_id,field,value} para name,short_description,description,capacity,min_nights,status,active; content_manage {content_id,field,value} para title,slug,status,seo_title,meta_description; tariff_create {room_id,name,start_date,end_date,price,min_nights,priority}; package_create {room_id,name,description,start_date,end_date,price,nights}; tariff_toggle {tariff_id,enabled}; package_toggle {package_id,enabled}; promotion_manage {promotion_id,field,value} para title,description,active; knowledge_manage {knowledge_id,field,value} para title,content,active; reservation_status {reservation_id,status,reason} somente conforme transições reais, nunca afirme pagamento; media_manage {media_id,field,value} para caption,alt_text,sort_order,active, sem adicionar/remover arquivos. Para operações de criação, exija todos os dados e confirmação. Não invente IDs. Ações permitidas apenas em authorized_types: content_update {content_id,body}; room_price {room_id,price}; property_update {field,value} com field em address,address_number,city,state,neighborhood,zip,map_url,latitude,longitude,phone,whatsapp; map_block {room_id,start_date,end_date,reason}; map_unblock {block_id}; guest_register {name,phone,email}; reservation_prebook {guest_id,room_id,checkin,checkout,guests}. Para content_update inclua o texto integral revisado (pode pedir para o gestor abrir o editor se o trecho disponível for incompleto). Toda ação será proposta e exigirá confirmação; para mapa_unblock não remova reservas. Retorne apenas JSON válido, sem cercas Markdown.";
+        $instructions="Você é a assistente virtual do painel de gestão. Converse em português brasileiro, com acolhimento e respostas curtas e naturais. Perguntas vagas como 'pode alterar uns detalhes?' devem ser respondidas normalmente, perguntando o que o gestor deseja modificar. NUNCA afirme que já alterou algo. Se o usuário pedir uma mudança com todos os dados, retorne JSON com 'answer' (texto breve) e 'action' (objeto); em dúvidas ou pedidos incompletos action=null. Nunca invente IDs, valores, disponibilidade ou confirmação de pagamento. A tarifa real da diária está em tariffs e o pacote em room_packages; room_price é apenas preço-base legado. Para pedidos de diária com tarifa identificada use tariff_price {tariff_id,price}; para pacote identificado use package_price {package_id,price}. Comodidade da pousada: amenity_toggle {amenity_id,enabled} para a lista property_amenities; o switch deve refletir no atendimento. SEO de página existente: seo_update {content_id,seo_title,meta_description}. Marketing: promotion_create {title,description,code,discount_type,discount_value,start_date,end_date}; o administrador precisa confirmar a criação. Texto visual do site: site_text {key,value}, key entre hero_title,hero_description,hero_kicker,intro_title,footer_bottom,booking_cta,menu_home,menu_about,menu_accommodations,menu_gastronomy,menu_experiences,menu_offers,menu_contact,hero_primary_cta,hero_secondary_cta. Nunca prometa publicação em Google, Facebook ou Instagram sem conexão real. Adicionalmente: room_amenity_toggle {room_id,amenity_id,enabled} controla o switch de comodidade por unidade; site_setting {field,value} para site_name,tagline,chat_agent_name,chat_welcome,footer_text; media_cover {media_id} para tornar uma imagem da propriedade a capa principal (não exclui arquivos). Adicionalmente: room_update {room_id,field,value} para name,short_description,description,capacity,min_nights,status,active; content_manage {content_id,field,value} para title,slug,status,seo_title,meta_description; tariff_create {room_id,name,start_date,end_date,price,min_nights,priority}; package_create {room_id,name,description,start_date,end_date,price,nights}; tariff_toggle {tariff_id,enabled}; package_toggle {package_id,enabled}; promotion_manage {promotion_id,field,value} para title,description,active; knowledge_manage {knowledge_id,field,value} para title,content,active; reservation_status {reservation_id,status,reason} somente conforme transições reais, nunca afirme pagamento; media_manage {media_id,field,value} para caption,alt_text,sort_order,active, sem adicionar/remover arquivos. Para operações de criação, exija todos os dados e confirmação. Não invente IDs. Ações permitidas apenas em authorized_types: content_update {content_id,body}; room_price {room_id,price}; property_update {field,value} com field em address,address_number,city,state,neighborhood,zip,map_url,latitude,longitude,phone,whatsapp; map_block {room_id,start_date,end_date,reason}; map_unblock {block_id}; guest_register {name,phone,email}; reservation_prebook {guest_id,room_id,checkin,checkout,guests}. Para content_update inclua o texto integral revisado (pode pedir para o gestor abrir o editor se o trecho disponível for incompleto). Toda ação será proposta e exigirá confirmação; para mapa_unblock não remova reservas. Retorne apenas JSON válido, sem cercas Markdown.";
         $payload=json_encode($input,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_INVALID_UTF8_SUBSTITUTE);
         if($payload===false)throw new \RuntimeException('Não foi possível preparar o contexto.');
         $response=(new GeminiService())->ask($instructions."\nCONTEXTO OPERACIONAL SELECIONADO:\n".$payload,false);
@@ -95,6 +101,24 @@ final class PanelAgentService {
     }
     private static function validate(array $action):array {
         $pdo=DB::pdo();$type=(string)($action['type']??'');$a=['type'=>$type];
+        if($type==='room_amenity_toggle'){
+            $a['room_id']=(int)($action['room_id']??0);$a['amenity_id']=(int)($action['amenity_id']??0);$a['enabled']=!empty($action['enabled'])?1:0;
+            $q=$pdo->prepare("SELECT r.name room_name,a.name amenity_name FROM rooms r JOIN amenities a ON a.id=? AND a.scope='room' AND a.active=1 WHERE r.id=? AND r.active=1");$q->execute([$a['amenity_id'],$a['room_id']]);$r=$q->fetch();
+            if(!$r)throw new \RuntimeException('Unidade ou comodidade inexistente.');
+            return [$a,($a['enabled']?'Ativar':'Desativar').' "'.$r['amenity_name'].'" em "'.$r['room_name'].'"'];
+        }
+        if($type==='site_setting'){
+            $a['field']=(string)($action['field']??'');$a['value']=trim((string)($action['value']??''));
+            $limits=['site_name'=>180,'tagline'=>300,'chat_agent_name'=>100,'chat_welcome'=>1500,'footer_text'=>3000];
+            if(!isset($limits[$a['field']])||mb_strlen($a['value'])>$limits[$a['field']])throw new \RuntimeException('Configuração de site inválida.');
+            return [$a,'Atualizar configuração global '.$a['field']];
+        }
+        if($type==='media_cover'){
+            $a['media_id']=(int)($action['media_id']??0);
+            $q=$pdo->prepare("SELECT id FROM media WHERE id=? AND scope='property' AND entity_id=1 AND type='image'");$q->execute([$a['media_id']]);
+            if(!$q->fetchColumn())throw new \RuntimeException('Imagem da propriedade inexistente.');
+            return [$a,'Definir mídia #'.$a['media_id'].' como capa principal'];
+        }
         if($type==='room_update'){
             $a['room_id']=(int)($action['room_id']??0);$a['field']=(string)($action['field']??'');$a['value']=trim((string)($action['value']??''));
             $allowed=['name'=>120,'short_description'=>2000,'description'=>12000,'capacity'=>3,'min_nights'=>3,'status'=>20,'active'=>1];
@@ -181,7 +205,7 @@ final class PanelAgentService {
         }
         if($type==='site_text'){
             $a['key']=(string)($action['key']??'');$a['value']=trim((string)($action['value']??''));
-            if(!in_array($a['key'],['hero_title','hero_description','hero_kicker','intro_title','footer_bottom','booking_cta'],true)||mb_strlen($a['value'])>3000)throw new \RuntimeException('Campo visual não permitido.');
+            if(!in_array($a['key'],['hero_title','hero_description','hero_kicker','intro_title','footer_bottom','booking_cta','menu_home','menu_about','menu_accommodations','menu_gastronomy','menu_experiences','menu_offers','menu_contact','hero_primary_cta','hero_secondary_cta'],true)||mb_strlen($a['value'])>3000)throw new \RuntimeException('Campo visual não permitido.');
             return [$a,'Atualizar texto do site: '.$a['key']];
         }
         if($type==='promotion_create'){
@@ -247,7 +271,23 @@ final class PanelAgentService {
         if(!Auth::can(self::PERMISSIONS[$type]))throw new \RuntimeException('Sem permissão para esta operação.');
         self::validate($a);
         $pdo=DB::pdo();$id=0;
-        if($type==='room_update'||$type==='content_manage'||$type==='promotion_manage'||$type==='knowledge_manage'||$type==='media_manage'){
+        if($type==='room_amenity_toggle'){
+            $id=$a['room_id'];
+            if($a['enabled'])$pdo->prepare('INSERT IGNORE INTO room_amenities(room_id,amenity_id) VALUES(?,?)')->execute([$id,$a['amenity_id']]);
+            else $pdo->prepare('DELETE FROM room_amenities WHERE room_id=? AND amenity_id=?')->execute([$id,$a['amenity_id']]);
+        }elseif($type==='site_setting'){
+            $field=$a['field'];$id=1;$pdo->prepare("UPDATE site_settings SET {$field}=?,updated_at=NOW() WHERE id=1")->execute([$a['value']]);\App\Core\Site::resetCache();
+        }elseif($type==='media_cover'){
+            $id=$a['media_id'];$pdo->beginTransaction();try{
+                $q=$pdo->prepare("SELECT file_path,url FROM media WHERE id=? AND scope='property' AND entity_id=1 AND type='image' FOR UPDATE");$q->execute([$id]);$m=$q->fetch();
+                if(!$m)throw new \RuntimeException('Imagem não encontrada.');
+                $src=(string)($m['file_path']?:$m['url']);if($src==='')throw new \RuntimeException('Imagem sem arquivo.');
+                $pdo->exec("UPDATE media SET is_cover=0 WHERE scope='property' AND entity_id=1");
+                $pdo->prepare("UPDATE media SET is_cover=1,active=1 WHERE id=?")->execute([$id]);
+                $pdo->prepare("UPDATE property SET hero_media_type='image',hero_image=?,updated_at=NOW() WHERE id=1")->execute([$src]);
+                $pdo->commit();
+            }catch(\Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
+        }elseif($type==='room_update'||$type==='content_manage'||$type==='promotion_manage'||$type==='knowledge_manage'||$type==='media_manage'){
             $mapping=['room_update'=>['rooms','room_id'],'content_manage'=>['contents','content_id'],'promotion_manage'=>['promotions','promotion_id'],'knowledge_manage'=>['knowledge_base','knowledge_id'],'media_manage'=>['media','media_id']];
             [$table,$key]=$mapping[$type];$id=$a[$key];$field=$a['field'];
             $pdo->prepare("UPDATE {$table} SET {$field}=? WHERE id=?")->execute([$a['value'],$id]);
