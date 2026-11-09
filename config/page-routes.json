@@ -524,5 +524,21 @@
       "GET",
       "POST"
     ]
+  },
+  "comandas": {
+    "file": "comandas.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  "livro_caixa": {
+    "file": "livro_caixa.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
   }
 }
