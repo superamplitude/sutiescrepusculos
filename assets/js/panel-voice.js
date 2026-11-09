@@ -7,7 +7,7 @@
  const confirmBox=host.querySelector('[data-agent-confirm-box]'),confirmText=host.querySelector('[data-agent-confirm-text]');
  const csrf=host.querySelector('[name=_csrf]').value;
  const welcomeButton=host.querySelector('[data-voice-greeting]');
- let audio=null,objectUrl=null,lastText='',busy=false,speechController=null,speechVersion=0,pendingGreeting='',pendingToken='',welcomeText='',welcomeKey='',greetingPlayed=false,blockedPlayback=false,blockedWelcome=false;
+ let audio=null,objectUrl=null,lastText='',busy=false,speechController=null,speechVersion=0,pendingGreeting='',pendingToken='',welcomeText='',welcomeKey='',greetingPlayed=false,blockedPlayback=false,blockedWelcome=false,greetingGestureRequested=false;
  const sayStatus=t=>{status.textContent=t;};
  const saveWelcome=()=>{try{if(welcomeKey)sessionStorage.setItem(welcomeKey,'played');}catch{}};
  const welcomePreviouslyPlayed=()=>{try{return sessionStorage.getItem(welcomeKey)==='played';}catch{return false;}};
@@ -21,7 +21,7 @@
    sayStatus(message||'Clique em Ouvir recepção para ativar a voz natural.');
  };
  const welcomeStarted=()=>{
-   greetingPlayed=true;pendingGreeting='';welcomeButton.hidden=true;blockedPlayback=false;blockedWelcome=false;
+   greetingPlayed=true;pendingGreeting='';greetingGestureRequested=false;welcomeButton.hidden=true;blockedPlayback=false;blockedWelcome=false;
    toggle.classList.remove('needs-voice-gesture');toggle.textContent='💬 Falar com IA';
    sayStatus('Falando…');
  };
@@ -50,6 +50,8 @@
      if(!(res.headers.get('content-type')||'').includes('audio/wav'))throw Error('Áudio não retornado pelo serviço.');
      const blob=await res.blob();if(version!==speechVersion)return;
      objectUrl=URL.createObjectURL(blob);audio=new Audio(objectUrl);audio.muted=false;audio.volume=1;audio.preload='auto';
+     // If a user clicked while synthesis was running, honor that request as soon as WAV is ready.
+     if(isWelcome&&greetingGestureRequested){greetingGestureRequested=false;showVoiceAction('Recepção preparada. Clique para ouvir a saudação.');}
      audio.addEventListener('ended',()=>{if(version===speechVersion){if(isWelcome)saveWelcome();sayStatus('Pronta para conversar.');}});
      try{await audio.play();if(version===speechVersion){if(isWelcome)welcomeStarted();else{sayStatus('Falando…');pendingGreeting='';}}}
      catch(error){
@@ -61,7 +63,7 @@
        }
        else throw error;
      }
-   }catch(e){if(version===speechVersion)sayStatus(e.name==='AbortError'?'Áudio excedeu o tempo de resposta.':e.message);}
+   }catch(e){if(version===speechVersion){sayStatus(e.name==='AbortError'?'Áudio excedeu o tempo de resposta.':e.message);if(isWelcome&&!greetingPlayed){pendingGreeting=text;greetingGestureRequested=false;showVoiceAction('Não foi possível iniciar a saudação. Clique para tentar novamente.','▶ Tentar recepção');}}}
    finally{clearTimeout(timer);if(version===speechVersion)speechController=null;}
  };
  const busyUI=v=>{busy=v;sendButton.disabled=v;question.disabled=v;host.setAttribute('aria-busy',String(v));};
@@ -119,7 +121,7 @@
      return;
    }
    if(!pendingGreeting||greetingPlayed||!welcomeText)return;
-   if(speechController){sayStatus('Preparando recepção. Aguarde o botão para ouvir.');return;}
+   if(speechController){greetingGestureRequested=true;showVoiceAction('Preparando sua recepção. O áudio será liberado assim que estiver pronto.');return;}
    void playText(welcomeText,true);
  };
  document.addEventListener('pointerdown',e=>{
@@ -138,6 +140,7 @@
        append('Assistente',welcomeText);
        welcomeButton.hidden=false;
        toggle.textContent='▶ Recepção por voz';
+       sayStatus('Iniciando saudação de boas-vindas…');
        void playText(welcomeText,true);
      }
    }).catch(()=>{host.hidden=false;toggle.setAttribute('aria-expanded','true');sayStatus('Falha ao conectar à voz. Verifique a sessão ou tente novamente.');});
