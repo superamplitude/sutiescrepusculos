@@ -7,7 +7,7 @@
  const confirmBox=host.querySelector('[data-agent-confirm-box]'),confirmText=host.querySelector('[data-agent-confirm-text]');
  const csrf=host.querySelector('[name=_csrf]').value;
  const welcomeButton=host.querySelector('[data-voice-greeting]');
- let audio=null,objectUrl=null,lastText='',busy=false,speechController=null,speechVersion=0,pendingGreeting='',pendingToken='',welcomeText='',welcomeKey='',greetingPlayed=false,blockedPlayback=false,blockedWelcome=false,greetingGestureRequested=false;
+ let audio=null,objectUrl=null,webAudio=null,webAudioUnlocked=false,webAudioSource=null,lastText='',busy=false,speechController=null,speechVersion=0,pendingGreeting='',pendingToken='',welcomeText='',welcomeKey='',greetingPlayed=false,blockedPlayback=false,blockedWelcome=false,greetingGestureRequested=false;
  const sayStatus=t=>{status.textContent=t;};
  const saveWelcome=()=>{try{if(welcomeKey)sessionStorage.setItem(welcomeKey,'played');}catch{}};
  const welcomePreviouslyPlayed=()=>{try{return sessionStorage.getItem(welcomeKey)==='played';}catch{return false;}};
@@ -27,7 +27,7 @@
  };
  const cleanAudio=()=>{
    speechVersion++;speechController?.abort();speechController=null;
-   audio?.pause();audio=null;blockedPlayback=false;blockedWelcome=false;if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=null;
+   audio?.pause();audio=null;try{webAudioSource?.stop();}catch{}webAudioSource=null;blockedPlayback=false;blockedWelcome=false;if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=null;
  };
  const append=(who,message)=>{
    const bubble=document.createElement('div');bubble.className='suites-chat-message '+(who==='Você'?'from-user':'from-agent');
@@ -49,6 +49,11 @@
      const res=await post('speech',text,controller.signal);
      if(!(res.headers.get('content-type')||'').includes('audio/wav'))throw Error('Áudio não retornado pelo serviço.');
      const blob=await res.blob();if(version!==speechVersion)return;
+     // When a click happened during synthesis, play the same WAV through the
+     // unlocked browser audio context instead of losing the transient gesture.
+     if(webAudioUnlocked){
+       try{if(await playUnlockedWav(blob,isWelcome,version))return;}catch{}
+     }
      objectUrl=URL.createObjectURL(blob);audio=new Audio(objectUrl);audio.muted=false;audio.volume=1;audio.preload='auto';
      // If a user clicked while synthesis was running, honor that request as soon as WAV is ready.
      if(isWelcome&&greetingGestureRequested){greetingGestureRequested=false;showVoiceAction('Recepção preparada. Clique para ouvir a saudação.');}
@@ -65,6 +70,35 @@
      }
    }catch(e){if(version===speechVersion){sayStatus(e.name==='AbortError'?'Áudio excedeu o tempo de resposta.':e.message);if(isWelcome&&!greetingPlayed){pendingGreeting=text;greetingGestureRequested=false;showVoiceAction('Não foi possível iniciar a saudação. Clique para tentar novamente.','▶ Tentar recepção');}}}
    finally{clearTimeout(timer);if(version===speechVersion)speechController=null;}
+ };
+ const unlockNaturalAudio=()=>{
+   // Resume a browser audio context during an actual user gesture, even when
+   // speech synthesis has not finished. The same approved WAV is decoded later.
+   const AudioContextCtor=window.AudioContext||window.webkitAudioContext;
+   if(!AudioContextCtor)return;
+   try{
+     if(!webAudio)webAudio=new AudioContextCtor();
+     if(webAudio.state==='running'){webAudioUnlocked=true;return;}
+     const result=webAudio.resume();
+     if(result&&typeof result.then==='function')void result.then(()=>{webAudioUnlocked=webAudio.state==='running';}).catch(()=>{});
+     if(webAudio.state==='running')webAudioUnlocked=true;
+   }catch{}
+ };
+ const playUnlockedWav=async(blob,isWelcome,version)=>{
+   if(!webAudio||!webAudioUnlocked||webAudio.state!=='running')return false;
+   const pcm=await webAudio.decodeAudioData(await blob.arrayBuffer());
+   if(version!==speechVersion)return true;
+   const node=webAudio.createBufferSource();node.buffer=pcm;node.connect(webAudio.destination);
+   webAudioSource=node;
+   node.addEventListener('ended',()=>{
+     if(version!==speechVersion)return;
+     webAudioSource=null;
+     if(isWelcome)saveWelcome();
+     sayStatus('Pronta para conversar.');
+   });
+   node.start(0);
+   if(isWelcome)welcomeStarted();else sayStatus('Falando…');
+   return true;
  };
  const busyUI=v=>{busy=v;sendButton.disabled=v;question.disabled=v;host.setAttribute('aria-busy',String(v));};
  const act=async(kind,text)=>{
@@ -88,7 +122,7 @@
    void act('answer',text);
  };
  toggle.addEventListener('click',()=>{
-   if((blockedPlayback&&audio)||(pendingGreeting&&!greetingPlayed)){host.hidden=false;toggle.setAttribute('aria-expanded','true');userGesture();return;}
+   if((blockedPlayback&&audio)||(pendingGreeting&&!greetingPlayed)){host.hidden=false;toggle.setAttribute('aria-expanded','true');unlockNaturalAudio();userGesture();return;}
    const visible=host.hidden;host.hidden=!visible;toggle.setAttribute('aria-expanded',String(visible));
    if(visible){question.focus();}
  });
@@ -98,7 +132,7 @@
  host.querySelector('[data-voice-repeat]').addEventListener('click',()=>{if(busy)return;if(blockedPlayback&&audio)userGesture();else if(lastText)void playText(lastText);});
  host.querySelector('[data-voice-stop]').addEventListener('click',()=>{cleanAudio();sayStatus('Voz interrompida. Chat disponível.');});
  host.querySelector('[data-voice-test]').addEventListener('click',()=>{if(busy)return;if(blockedPlayback&&audio)userGesture();else void playText('Olá. Estou pronta para conversar e ajudar no seu painel.');});
- welcomeButton.addEventListener('click',()=>{if(!busy)userGesture();});
+ welcomeButton.addEventListener('click',()=>{if(!busy){unlockNaturalAudio();userGesture();}});
  host.querySelector('[data-agent-confirm]').addEventListener('click',()=>{if(!pendingToken)return;const token=pendingToken;pendingToken='';confirmBox.hidden=true;void act('confirm',token);});
  host.querySelector('[data-agent-cancel]').addEventListener('click',()=>{pendingToken='';confirmBox.hidden=true;void act('cancel','cancelar');});
  const mic=host.querySelector('[data-voice-mic]'),Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -121,11 +155,13 @@
      return;
    }
    if(!pendingGreeting||greetingPlayed||!welcomeText)return;
-   if(speechController){greetingGestureRequested=true;showVoiceAction('Preparando sua recepção. O áudio será liberado assim que estiver pronto.');return;}
+   unlockNaturalAudio();
+   if(speechController){greetingGestureRequested=true;unlockNaturalAudio();showVoiceAction('Preparando sua recepção. O áudio será iniciado assim que estiver pronto.');return;}
    void playText(welcomeText,true);
  };
  document.addEventListener('pointerdown',e=>{
    if(e.target.closest('[data-voice-greeting], [data-voice-send], [data-voice-close], [data-voice-mic], [data-voice-stop], [data-voice-repeat], [data-voice-test], #suitesVoiceToggle'))return;
+   unlockNaturalAudio();
    userGesture();
  },{passive:true});
  fetch('/chat.php?action=panel_voice',{credentials:'same-origin',cache:'no-store'})
