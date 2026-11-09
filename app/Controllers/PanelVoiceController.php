@@ -7,7 +7,7 @@ final class PanelVoiceController {
     public static function handle(): never {
         header('Cache-Control: no-store');header('X-Content-Type-Options: nosniff');
         if (!Auth::user()) self::json(['ok'=>false,'error'=>'Entre no painel para usar a voz.'],401);
-        if (!Auth::can('ai.use')) self::json(['ok'=>false,'error'=>'Seu perfil não permite usar a IA.'],403);
+        if (!(Auth::isAdmin() || Auth::isSuperAdmin()) || !Auth::can('ai.use')) self::json(['ok'=>false,'error'=>'Seu perfil não permite usar a IA.'],403);
         $service=new PanelVoiceService();
         if (($_SERVER['REQUEST_METHOD']??'GET')==='GET') {
             $name=explode(' ',trim((string)(Auth::user()['name']??'')))[0];
