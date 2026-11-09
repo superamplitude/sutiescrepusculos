@@ -23,7 +23,7 @@
  const welcomeStarted=()=>{
    greetingPlayed=true;pendingGreeting='';welcomeButton.hidden=true;blockedPlayback=false;blockedWelcome=false;
    toggle.classList.remove('needs-voice-gesture');toggle.textContent='💬 Falar com IA';
-   saveWelcome();sayStatus('Falando…');
+   sayStatus('Falando…');
  };
  const cleanAudio=()=>{
    speechVersion++;speechController?.abort();speechController=null;
@@ -50,7 +50,7 @@
      if(!(res.headers.get('content-type')||'').includes('audio/wav'))throw Error('Áudio não retornado pelo serviço.');
      const blob=await res.blob();if(version!==speechVersion)return;
      objectUrl=URL.createObjectURL(blob);audio=new Audio(objectUrl);audio.muted=false;audio.volume=1;audio.preload='auto';
-     audio.addEventListener('ended',()=>{if(version===speechVersion)sayStatus('Pronta para conversar.');});
+     audio.addEventListener('ended',()=>{if(version===speechVersion){if(isWelcome)saveWelcome();sayStatus('Pronta para conversar.');}});
      try{await audio.play();if(version===speechVersion){if(isWelcome)welcomeStarted();else{sayStatus('Falando…');pendingGreeting='';}}}
      catch(error){
        if(version!==speechVersion)return;
@@ -130,13 +130,14 @@
    .then(r=>r.json()).then(data=>{
      if(!data.ok){host.hidden=false;toggle.setAttribute('aria-expanded','true');sayStatus(data.error||'Entre no painel novamente.');return;}
      sayStatus(data.configured?'Voz conectada.':'Serviço de voz não configurado.');
-     welcomeKey='suites.voice.greeting.'+host.dataset.greeting;
+     welcomeKey='suites.voice.greeting.completed.v2.'+host.dataset.greeting;
      welcomeText=data.greeting||'Olá. Como posso ajudar?';
      if(!data.configured){host.hidden=false;toggle.setAttribute('aria-expanded','true');append('Assistente','A recepção por voz está indisponível; o chat continua disponível.');return;}
      if(!welcomePreviouslyPlayed()){
        pendingGreeting=welcomeText;
        append('Assistente',welcomeText);
        welcomeButton.hidden=false;
+       toggle.textContent='▶ Recepção por voz';
        void playText(welcomeText,true);
      }
    }).catch(()=>{host.hidden=false;toggle.setAttribute('aria-expanded','true');sayStatus('Falha ao conectar à voz. Verifique a sessão ou tente novamente.');});
