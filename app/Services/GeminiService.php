@@ -14,24 +14,46 @@ final class GeminiService{
       $fact=BusinessContextService::verifiedServiceAnswer($q);
       if($fact!==null)return ['ok'=>true,'mode'=>'verified_property_fact','answer'=>$fact];
     }
-    $c=$this->config();$apiKey=Secret::decrypt($c['api_key']??'');
-    if(empty($c['enabled'])||empty($apiKey))return ['ok'=>false,'mode'=>'fallback','answer'=>$this->fallback($q),'error'=>'Gemini não configurado'];
-    if(!function_exists('curl_init'))return ['ok'=>false,'mode'=>'fallback','answer'=>$this->fallback($q),'error'=>'cURL indisponível'];
-    $model=$c['model']?:'gemini-2.5-flash';
+    $c=$this->config();
+    if(empty($c['enabled']))return ['ok'=>false,'mode'=>'central','answer'=>$this->fallback($q),'error'=>'Atendimento por IA desativado'];
+    // Project identity and access remain in the existing protected Suites voice configuration.
+    // No browser key, no new credential, no direct call to the Google API.
+    $file='/etc/crepusculo/voice.json';
+    if(!is_readable($file))return ['ok'=>false,'mode'=>'central','answer'=>$this->fallback($q),'error'=>'Credencial central indisponível'];
+    try{$auth=json_decode((string)file_get_contents($file),true,512,JSON_THROW_ON_ERROR);}
+    catch(\Throwable){return ['ok'=>false,'mode'=>'central','answer'=>$this->fallback($q),'error'=>'Credencial central inválida'];}
+    $token=(string)($auth['token']??'');
+    $key=(string)($auth['provider_api_key']??'');
+    if($key==='')$key=Secret::decrypt((string)($c['api_key']??''));
+    if($token===''||$key==='')return ['ok'=>false,'mode'=>'central','answer'=>$this->fallback($q),'error'=>'Projeto sem credenciais para IA'];
     $ctx=$includeKnowledge?$this->knowledge():'';
     $agent=trim((string)Site::get('chat_agent_name','Assistente IA'))?:'Assistente IA';
     $central=trim((string)($c['system_instruction']??''));
     $property=BusinessContextService::property();
-    $rules="Você é {$agent}, assistente de atendimento.\n".BusinessContextService::instructions($property);
-    if($central!=='')$rules.="\nINSTRUÇÃO DO SUPER ADMIN:\n".$central;
-    $payload=['contents'=>[['parts'=>[['text'=>$rules."\n\nBASE CONFIRMADA:\n".$ctx."\n\nPERGUNTA DO CLIENTE:\n".$q]]]]];
-    $ch=curl_init("https://generativelanguage.googleapis.com/v1beta/models/".rawurlencode($model).":generateContent?key=".rawurlencode($apiKey));
-    curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_POST=>true,CURLOPT_HTTPHEADER=>['Content-Type: application/json'],CURLOPT_POSTFIELDS=>json_encode($payload),CURLOPT_CONNECTTIMEOUT=>8,CURLOPT_TIMEOUT=>($includeKnowledge?25:38),CURLOPT_IPRESOLVE=>CURL_IPRESOLVE_V4]);
-    $raw=curl_exec($ch);$err=curl_error($ch);$http=(int)curl_getinfo($ch,CURLINFO_HTTP_CODE);curl_close($ch);
-    if($err||$http<200||$http>=300)return ['ok'=>false,'mode'=>'gemini','answer'=>$this->fallback($q),'http'=>$http,'error'=>$err?:$raw];
-    $j=json_decode($raw,true);$a='';foreach(($j['candidates'][0]['content']['parts']??[]) as $part)if(isset($part['text']))$a.=$part['text'];
-    if(!$a)return ['ok'=>false,'mode'=>'gemini','answer'=>$this->fallback($q),'http'=>$http,'error'=>'Resposta vazia'];
-    return ['ok'=>true,'mode'=>'gemini','answer'=>$a,'http'=>$http,'model'=>$model];
+    $rules="Você é {$agent}, assistente de atendimento.\\n".BusinessContextService::instructions($property);
+    if($central!=='')$rules.="\\nINSTRUÇÃO DO SUPER ADMIN:\\n".$central;
+    $prompt=$rules."\\n\\nBASE CONFIRMADA:\\n".$ctx."\\n\\nPERGUNTA DO CLIENTE:\\n".$q;
+    $model=(string)($c['model']?:'gemini-2.5-flash');
+    if(!preg_match('/^gemini-[a-z0-9.\\-]{2,55}$/D',$model))$model='gemini-2.5-flash';
+    if(!function_exists('curl_init'))return ['ok'=>false,'mode'=>'central','answer'=>$this->fallback($q),'error'=>'cURL indisponível'];
+    $url='http://127.0.0.1:13002/communication/v1/projects/suites-crepusculo/ai/generate';
+    $ch=curl_init($url);
+    curl_setopt_array($ch,[
+      CURLOPT_RETURNTRANSFER=>true,CURLOPT_POST=>true,CURLOPT_FOLLOWLOCATION=>false,
+      CURLOPT_HTTPHEADER=>['Content-Type: application/json','Accept: application/json','Authorization: Bearer '.$token],
+      CURLOPT_POSTFIELDS=>json_encode(['prompt'=>$prompt,'model'=>$model,'provider_api_key'=>$key],JSON_UNESCAPED_UNICODE|JSON_INVALID_UTF8_SUBSTITUTE|JSON_THROW_ON_ERROR),
+      CURLOPT_CONNECTTIMEOUT=>4,CURLOPT_TIMEOUT=>($includeKnowledge?42:48),
+      CURLOPT_IPRESOLVE=>CURL_IPRESOLVE_V4
+    ]);
+    $raw=curl_exec($ch);
+    $http=(int)curl_getinfo($ch,CURLINFO_HTTP_CODE);
+    $err=curl_error($ch);
+    curl_close($ch);
+    $payload=is_string($raw)?json_decode($raw,true):null;
+    if($err||$http!==200||!is_array($payload)||empty($payload['ok'])||!is_string($payload['answer']??null)){
+      return ['ok'=>false,'mode'=>'central','answer'=>$this->fallback($q),'http'=>$http,'error'=>(string)($payload['error']??($err?'CENTRAL_UNAVAILABLE':'CENTRAL_REQUEST_FAILED'))];
+    }
+    return ['ok'=>true,'mode'=>'central','answer'=>$payload['answer'],'http'=>200,'model'=>$payload['model']??$model];
   }
   private function knowledge():string{
     $pdo=DB::pdo();$parts=[];
