@@ -15,7 +15,7 @@ final class PanelAgentService {
         'reservation_prebook'=>'reservations.manage',
         'tariff_price'=>'prices.edit','package_price'=>'prices.edit',
         'seo_update'=>'content.publish','promotion_create'=>'content.publish',
-        'site_text'=>'site.manage'
+        'site_text'=>'site.manage','amenity_toggle'=>'property.edit'
     ];
     private static function pending():?array {
         $p=$_SESSION['_suites_agent_pending']??null;
@@ -44,10 +44,13 @@ final class PanelAgentService {
             $input['tariffs']=$pdo->query("SELECT id,room_id,name,start_date,end_date,price,active FROM tariffs ORDER BY id DESC LIMIT 35")->fetchAll(PDO::FETCH_ASSOC);
             $input['packages']=$pdo->query("SELECT id,room_id,name,start_date,end_date,price,active FROM room_packages ORDER BY id DESC LIMIT 35")->fetchAll(PDO::FETCH_ASSOC);
         }
+        if(preg_match('/caf[eé]|manh[aã]|comodidade|servi[cç]o|piscina|estacionamento|wi.fi/iu',$lower)){
+            $input['property_amenities']=$pdo->query("SELECT a.id,a.name,IF(pa.amenity_id IS NULL,0,1) AS enabled FROM amenities a LEFT JOIN property_amenities pa ON pa.amenity_id=a.id AND pa.property_id=1 WHERE a.scope='property' AND a.active=1 ORDER BY a.name LIMIT 100")->fetchAll(PDO::FETCH_ASSOC);
+        }
         if(preg_match('/reserv|h[oó]sped|check.in|check.out|entrada|sa[ií]da/iu',$lower)){
             $input['upcoming_reservations']=$pdo->query("SELECT r.id,r.code,r.room_id,r.checkin,r.checkout,r.status FROM reservations r WHERE r.checkout>=CURDATE() ORDER BY r.id DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC);
         }
-        $instructions="Você é a assistente virtual do painel de gestão. Converse em português brasileiro, com acolhimento e respostas curtas e naturais. Perguntas vagas como 'pode alterar uns detalhes?' devem ser respondidas normalmente, perguntando o que o gestor deseja modificar. NUNCA afirme que já alterou algo. Se o usuário pedir uma mudança com todos os dados, retorne JSON com 'answer' (texto breve) e 'action' (objeto); em dúvidas ou pedidos incompletos action=null. Nunca invente IDs, valores, disponibilidade ou confirmação de pagamento. A tarifa real da diária está em tariffs e o pacote em room_packages; room_price é apenas preço-base legado. Para pedidos de diária com tarifa identificada use tariff_price {tariff_id,price}; para pacote identificado use package_price {package_id,price}. SEO de página existente: seo_update {content_id,seo_title,meta_description}. Marketing: promotion_create {title,description,code,discount_type,discount_value,start_date,end_date}; o administrador precisa confirmar a criação. Texto visual do site: site_text {key,value}, key entre hero_title,hero_description,hero_kicker,intro_title,footer_bottom,booking_cta. Nunca prometa publicação em Google, Facebook ou Instagram sem conexão real. Ações permitidas apenas em authorized_types: content_update {content_id,body}; room_price {room_id,price}; property_update {field,value} com field em address,address_number,city,state,neighborhood,zip,map_url,latitude,longitude,phone,whatsapp; map_block {room_id,start_date,end_date,reason}; map_unblock {block_id}; guest_register {name,phone,email}; reservation_prebook {guest_id,room_id,checkin,checkout,guests}. Para content_update inclua o texto integral revisado (pode pedir para o gestor abrir o editor se o trecho disponível for incompleto). Toda ação será proposta e exigirá confirmação; para mapa_unblock não remova reservas. Retorne apenas JSON válido, sem cercas Markdown.";
+        $instructions="Você é a assistente virtual do painel de gestão. Converse em português brasileiro, com acolhimento e respostas curtas e naturais. Perguntas vagas como 'pode alterar uns detalhes?' devem ser respondidas normalmente, perguntando o que o gestor deseja modificar. NUNCA afirme que já alterou algo. Se o usuário pedir uma mudança com todos os dados, retorne JSON com 'answer' (texto breve) e 'action' (objeto); em dúvidas ou pedidos incompletos action=null. Nunca invente IDs, valores, disponibilidade ou confirmação de pagamento. A tarifa real da diária está em tariffs e o pacote em room_packages; room_price é apenas preço-base legado. Para pedidos de diária com tarifa identificada use tariff_price {tariff_id,price}; para pacote identificado use package_price {package_id,price}. Comodidade da pousada: amenity_toggle {amenity_id,enabled} para a lista property_amenities; o switch deve refletir no atendimento. SEO de página existente: seo_update {content_id,seo_title,meta_description}. Marketing: promotion_create {title,description,code,discount_type,discount_value,start_date,end_date}; o administrador precisa confirmar a criação. Texto visual do site: site_text {key,value}, key entre hero_title,hero_description,hero_kicker,intro_title,footer_bottom,booking_cta. Nunca prometa publicação em Google, Facebook ou Instagram sem conexão real. Ações permitidas apenas em authorized_types: content_update {content_id,body}; room_price {room_id,price}; property_update {field,value} com field em address,address_number,city,state,neighborhood,zip,map_url,latitude,longitude,phone,whatsapp; map_block {room_id,start_date,end_date,reason}; map_unblock {block_id}; guest_register {name,phone,email}; reservation_prebook {guest_id,room_id,checkin,checkout,guests}. Para content_update inclua o texto integral revisado (pode pedir para o gestor abrir o editor se o trecho disponível for incompleto). Toda ação será proposta e exigirá confirmação; para mapa_unblock não remova reservas. Retorne apenas JSON válido, sem cercas Markdown.";
         $payload=json_encode($input,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_INVALID_UTF8_SUBSTITUTE);
         if($payload===false)throw new \RuntimeException('Não foi possível preparar o contexto.');
         $response=(new GeminiService())->ask($instructions."\nCONTEXTO OPERACIONAL SELECIONADO:\n".$payload,false);
@@ -78,6 +81,12 @@ final class PanelAgentService {
     }
     private static function validate(array $action):array {
         $pdo=DB::pdo();$type=(string)($action['type']??'');$a=['type'=>$type];
+        if($type==='amenity_toggle'){
+            $a['amenity_id']=(int)($action['amenity_id']??0);$a['enabled']=!empty($action['enabled'])?1:0;
+            $q=$pdo->prepare("SELECT name FROM amenities WHERE id=? AND scope='property' AND active=1");$q->execute([$a['amenity_id']]);$name=$q->fetchColumn();
+            if(!$name)throw new \RuntimeException('Comodidade não encontrada.');
+            return [$a,($a['enabled']?'Ativar':'Desativar').' serviço "'.$name.'"'];
+        }
         if($type==='tariff_price'||$type==='package_price'){
             $table=$type==='tariff_price'?'tariffs':'room_packages';$key=$type==='tariff_price'?'tariff_id':'package_id';
             $a[$key]=(int)($action[$key]??0);$a['price']=(float)($action['price']??-1);
@@ -159,7 +168,11 @@ final class PanelAgentService {
         if(!Auth::can(self::PERMISSIONS[$type]))throw new \RuntimeException('Sem permissão para esta operação.');
         self::validate($a);
         $pdo=DB::pdo();$id=0;
-        if($type==='tariff_price'||$type==='package_price'){
+        if($type==='amenity_toggle'){
+            $id=$a['amenity_id'];
+            if($a['enabled'])$pdo->prepare('INSERT IGNORE INTO property_amenities(property_id,amenity_id) VALUES(1,?)')->execute([$id]);
+            else $pdo->prepare('DELETE FROM property_amenities WHERE property_id=1 AND amenity_id=?')->execute([$id]);
+        }elseif($type==='tariff_price'||$type==='package_price'){
             $table=$type==='tariff_price'?'tariffs':'room_packages';$key=$type==='tariff_price'?'tariff_id':'package_id';$id=$a[$key];
             $pdo->prepare("UPDATE {$table} SET price=? WHERE id=?")->execute([$a['price'],$id]);
         }elseif($type==='seo_update'){
