@@ -8,7 +8,7 @@ final class U{
       parse_str($query,$args);
       $p=(string)($args['p']??'');
       $routes=PageRoutes::all();
-      $u=(isset($routes[$p])&&$routes[$p]['access']==='admin'?'/painel/':'/index.php').'?'.$query;
+      if(isset($routes[$p])&&$routes[$p]['access']==='admin'){$extra=$args;unset($extra['p']);$u='/painel/'.$p.'.php'.($extra?'?'.http_build_query($extra):'');}else{$u='/index.php?'.$query;}
     }
     header('Location: '.$u);exit;
   }
