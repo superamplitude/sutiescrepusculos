@@ -41,7 +41,9 @@ final class AiConversationService
         }
         $prompt.="\nResponda somente à última mensagem do cliente.";
 
-        $r=(new GeminiService())->ask($prompt);
+        $lastGuest='';foreach(array_reverse($history) as $msg){if(($msg['sender_type']??'')==='guest'){$lastGuest=(string)$msg['body'];break;}}
+        $verified=BusinessContextService::verifiedServiceAnswer($lastGuest);
+        $r=$verified!==null?['ok'=>true,'answer'=>$verified]:(new GeminiService())->ask($prompt);
         if(empty($r['ok']))throw new \RuntimeException('IA indisponível: '.trim((string)($r['error']??'falha do provedor')));
         $answer=trim((string)($r['answer']??''));
         if($answer==='')throw new \RuntimeException('A IA retornou resposta vazia.');
