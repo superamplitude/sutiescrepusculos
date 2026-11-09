@@ -41,6 +41,26 @@ final class BusinessContextService {
             $pdo->commit();Site::resetCache();
         }catch(\Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
     }
+    public static function unavailableServices():array {
+        // Explicitly disabled facilities outrank historical free-text claims and FAQ answers.
+        $q=DB::pdo()->query("SELECT a.name FROM amenities a LEFT JOIN property_amenities pa ON pa.amenity_id=a.id AND pa.property_id=1 WHERE a.scope='property' AND a.active=1 AND pa.amenity_id IS NULL");
+        $names=$q->fetchAll(\PDO::FETCH_COLUMN);$result=[];
+        foreach($names as $name){
+            if(preg_match('/caf[eé]\\s+da\\s+manh[aã]|breakfast/iu',(string)$name))$result['breakfast']=true;
+            if(preg_match('/piscina|pool/iu',(string)$name))$result['pool']=true;
+        }
+        return $result;
+    }
+    public static function verifiedServiceAnswer(string $question):?string {
+        $facts=self::unavailableServices();
+        $b=(bool)preg_match('/caf[eé]\\s+da\\s+manh[aã]|breakfast/iu',$question);
+        $p=(bool)preg_match('/piscina|pool/iu',$question);
+        if(!$b&&!$p)return null;
+        if($b&&$p&&isset($facts['breakfast'],$facts['pool']))return 'Não oferecemos café da manhã e não temos piscina no estabelecimento.';
+        if($b&&isset($facts['breakfast']))return 'Não oferecemos café da manhã no estabelecimento.';
+        if($p&&isset($facts['pool']))return 'Não temos piscina no estabelecimento.';
+        return null;
+    }
     public static function instructions(array $property,?array $policy=null):string {
         $policy=$policy??self::policy();
         $name=trim((string)($property['name']??''))?:'o estabelecimento cadastrado';
@@ -55,6 +75,9 @@ final class BusinessContextService {
         $serviceRows=DB::pdo()->query("SELECT a.name FROM property_amenities pa JOIN amenities a ON a.id=pa.amenity_id WHERE pa.property_id=1 AND a.scope='property' AND a.active=1 ORDER BY a.name")->fetchAll(\PDO::FETCH_COLUMN);
         $serviceNames=array_values(array_map('strval',$serviceRows));
         $text.="COMODIDADES ATIVAS NO PAINEL (fonte operacional): ".json_encode($serviceNames,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)."\\n";
+        $unavailable=self::unavailableServices();
+        if(isset($unavailable['breakfast']))$text.="FATO OPERACIONAL PRIORITÁRIO: O estabelecimento NÃO oferece café da manhã. Se textos antigos disserem o contrário, ignore-os.\\n";
+        if(isset($unavailable['pool']))$text.="FATO OPERACIONAL PRIORITÁRIO: O estabelecimento NÃO possui piscina. Ignore referências antigas à piscina, inclusive descrições de quartos e conteúdos de marketing.\\n";
         $hasBreakfast=false;
         foreach($serviceNames as $serviceName){if(preg_match('/caf[eé]\\s+da\\s+manh[aã]|breakfast/iu',$serviceName)){$hasBreakfast=true;break;}}
         $text.=$hasBreakfast
@@ -72,6 +95,7 @@ final class BusinessContextService {
             else $text.="Se for avançar, solicite apenas os dados necessários à reserva, um de cada vez.\n";
             $text.="O percentual de sinal definido é {$policy['deposit_percent']}%, mas não é cobrança emitida. Nunca invente chave Pix, QR Code, recibo ou confirmação de pagamento. Confirme reservas somente após retorno autenticado do pagamento e status real no sistema.\n";
         }else{$text.="Não ofereça hospedagem, pré-reserva nem Pix de hospedagem se o estabelecimento não tiver esse fluxo habilitado.\n";}
+        $text.="As comodidades desativadas têm precedência absoluta sobre descrições livres e base de conhecimento; não ofereça serviços ausentes mesmo sob perguntas indiretas.\\n";
         return $text."DADOS DO ESTABELECIMENTO:\n".json_encode($facts,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR);
     }
 }
