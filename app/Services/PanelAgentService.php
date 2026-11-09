@@ -12,7 +12,10 @@ final class PanelAgentService {
         'content_update'=>'content.publish','room_price'=>'rooms.manage',
         'property_update'=>'property.edit','map_block'=>'calendar.block',
         'map_unblock'=>'calendar.block','guest_register'=>'guests.view',
-        'reservation_prebook'=>'reservations.manage'
+        'reservation_prebook'=>'reservations.manage',
+        'tariff_price'=>'prices.edit','package_price'=>'prices.edit',
+        'seo_update'=>'content.publish','promotion_create'=>'content.publish',
+        'site_text'=>'site.manage'
     ];
     private static function pending():?array {
         $p=$_SESSION['_suites_agent_pending']??null;
@@ -34,13 +37,17 @@ final class PanelAgentService {
             $input['rooms']=$pdo->query("SELECT id,name,base_price,capacity,status FROM rooms WHERE active=1 ORDER BY id LIMIT 35")->fetchAll(PDO::FETCH_ASSOC);
             $input['blocks']=$pdo->query("SELECT id,room_id,start_date,end_date,type FROM room_blocks WHERE end_date>=CURDATE() ORDER BY start_date LIMIT 35")->fetchAll(PDO::FETCH_ASSOC);
         }
-        if(preg_match('/texto|p[aá]gina|conte[uú]do|site|descri[cç][aã]o|t[ií]tulo|seo/iu',$lower)){
-            $input['contents']=$pdo->query("SELECT id,slug,title,LEFT(body,1000) AS body,status FROM contents ORDER BY id DESC LIMIT 18")->fetchAll(PDO::FETCH_ASSOC);
+        if(preg_match('/texto|p[aá]gina|conte[uú]do|site|descri[cç][aã]o|t[ií]tulo|seo|marketing|promo[cç][aã]o|campanha/iu',$lower)){
+            $input['contents']=$pdo->query("SELECT id,slug,title,seo_title,meta_description,LEFT(body,1000) AS body,status FROM contents ORDER BY id DESC LIMIT 18")->fetchAll(PDO::FETCH_ASSOC);
+        }
+        if(preg_match('/di[aá]ria|tarifa|pacote|pre[cç]o|marketing|promo[cç][aã]o/iu',$lower)){
+            $input['tariffs']=$pdo->query("SELECT id,room_id,name,start_date,end_date,price,active FROM tariffs ORDER BY id DESC LIMIT 35")->fetchAll(PDO::FETCH_ASSOC);
+            $input['packages']=$pdo->query("SELECT id,room_id,name,start_date,end_date,price,active FROM room_packages ORDER BY id DESC LIMIT 35")->fetchAll(PDO::FETCH_ASSOC);
         }
         if(preg_match('/reserv|h[oó]sped|check.in|check.out|entrada|sa[ií]da/iu',$lower)){
             $input['upcoming_reservations']=$pdo->query("SELECT r.id,r.code,r.room_id,r.checkin,r.checkout,r.status FROM reservations r WHERE r.checkout>=CURDATE() ORDER BY r.id DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC);
         }
-        $instructions="Você é a assistente virtual do painel de gestão. Converse em português brasileiro, com acolhimento e respostas curtas e naturais. Perguntas vagas como 'pode alterar uns detalhes?' devem ser respondidas normalmente, perguntando o que o gestor deseja modificar. NUNCA afirme que já alterou algo. Se o usuário pedir uma mudança com todos os dados, retorne JSON com 'answer' (texto breve) e 'action' (objeto); em dúvidas ou pedidos incompletos action=null. Nunca invente IDs, valores, disponibilidade ou confirmação de pagamento. Ações permitidas apenas em authorized_types: content_update {content_id,body}; room_price {room_id,price}; property_update {field,value} com field em address,address_number,city,state,neighborhood,zip,map_url,latitude,longitude,phone,whatsapp; map_block {room_id,start_date,end_date,reason}; map_unblock {block_id}; guest_register {name,phone,email}; reservation_prebook {guest_id,room_id,checkin,checkout,guests}. Para content_update inclua o texto integral revisado (pode pedir para o gestor abrir o editor se o trecho disponível for incompleto). Toda ação será proposta e exigirá confirmação; para mapa_unblock não remova reservas. Retorne apenas JSON válido, sem cercas Markdown.";
+        $instructions="Você é a assistente virtual do painel de gestão. Converse em português brasileiro, com acolhimento e respostas curtas e naturais. Perguntas vagas como 'pode alterar uns detalhes?' devem ser respondidas normalmente, perguntando o que o gestor deseja modificar. NUNCA afirme que já alterou algo. Se o usuário pedir uma mudança com todos os dados, retorne JSON com 'answer' (texto breve) e 'action' (objeto); em dúvidas ou pedidos incompletos action=null. Nunca invente IDs, valores, disponibilidade ou confirmação de pagamento. A tarifa real da diária está em tariffs e o pacote em room_packages; room_price é apenas preço-base legado. Para pedidos de diária com tarifa identificada use tariff_price {tariff_id,price}; para pacote identificado use package_price {package_id,price}. SEO de página existente: seo_update {content_id,seo_title,meta_description}. Marketing: promotion_create {title,description,code,discount_type,discount_value,start_date,end_date}; o administrador precisa confirmar a criação. Texto visual do site: site_text {key,value}, key entre hero_title,hero_description,hero_kicker,intro_title,footer_bottom,booking_cta. Nunca prometa publicação em Google, Facebook ou Instagram sem conexão real. Ações permitidas apenas em authorized_types: content_update {content_id,body}; room_price {room_id,price}; property_update {field,value} com field em address,address_number,city,state,neighborhood,zip,map_url,latitude,longitude,phone,whatsapp; map_block {room_id,start_date,end_date,reason}; map_unblock {block_id}; guest_register {name,phone,email}; reservation_prebook {guest_id,room_id,checkin,checkout,guests}. Para content_update inclua o texto integral revisado (pode pedir para o gestor abrir o editor se o trecho disponível for incompleto). Toda ação será proposta e exigirá confirmação; para mapa_unblock não remova reservas. Retorne apenas JSON válido, sem cercas Markdown.";
         $payload=json_encode($input,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_INVALID_UTF8_SUBSTITUTE);
         if($payload===false)throw new \RuntimeException('Não foi possível preparar o contexto.');
         $response=(new GeminiService())->ask($instructions."\nCONTEXTO OPERACIONAL SELECIONADO:\n".$payload,false);
@@ -71,6 +78,31 @@ final class PanelAgentService {
     }
     private static function validate(array $action):array {
         $pdo=DB::pdo();$type=(string)($action['type']??'');$a=['type'=>$type];
+        if($type==='tariff_price'||$type==='package_price'){
+            $table=$type==='tariff_price'?'tariffs':'room_packages';$key=$type==='tariff_price'?'tariff_id':'package_id';
+            $a[$key]=(int)($action[$key]??0);$a['price']=(float)($action['price']??-1);
+            $q=$pdo->prepare("SELECT name FROM {$table} WHERE id=?");$q->execute([$a[$key]]);$name=$q->fetchColumn();
+            if(!$name||!is_finite($a['price'])||$a['price']<0||$a['price']>1000000)throw new \RuntimeException('Tarifa, pacote ou valor inválido.');
+            return [$a,'Alterar valor de "'.$name.'" para R$ '.number_format($a['price'],2,',','.')];
+        }
+        if($type==='seo_update'){
+            $a['content_id']=(int)($action['content_id']??0);$a['seo_title']=trim((string)($action['seo_title']??''));$a['meta_description']=trim((string)($action['meta_description']??''));
+            $q=$pdo->prepare('SELECT title FROM contents WHERE id=?');$q->execute([$a['content_id']]);$name=$q->fetchColumn();
+            if(!$name||$a['seo_title']===''||mb_strlen($a['seo_title'])>180||mb_strlen($a['meta_description'])>500)throw new \RuntimeException('Página ou metadados SEO inválidos.');
+            return [$a,'Atualizar título SEO e descrição de "'.$name.'"'];
+        }
+        if($type==='site_text'){
+            $a['key']=(string)($action['key']??'');$a['value']=trim((string)($action['value']??''));
+            if(!in_array($a['key'],['hero_title','hero_description','hero_kicker','intro_title','footer_bottom','booking_cta'],true)||mb_strlen($a['value'])>3000)throw new \RuntimeException('Campo visual não permitido.');
+            return [$a,'Atualizar texto do site: '.$a['key']];
+        }
+        if($type==='promotion_create'){
+            foreach(['title','description','code','discount_type'] as $f)$a[$f]=trim((string)($action[$f]??''));
+            $a['discount_value']=(float)($action['discount_value']??-1);
+            foreach(['start_date','end_date'] as $f)$a[$f]=self::date((string)($action[$f]??''));
+            if(mb_strlen($a['title'])<3||mb_strlen($a['title'])>120||mb_strlen($a['description'])>3000||!preg_match('/^[A-Za-z0-9_-]{3,40}$/',$a['code'])||!in_array($a['discount_type'],['fixed','percent'],true)||!is_finite($a['discount_value'])||$a['discount_value']<=0||($a['discount_type']==='percent'&&$a['discount_value']>100)||$a['start_date']>$a['end_date'])throw new \RuntimeException('Dados da campanha inválidos.');
+            return [$a,'Criar promoção "'.$a['title'].'" com cupom '.$a['code'].'; sem divulgar em redes sociais'];
+        }
         if($type==='content_update'){
             $a['content_id']=(int)($action['content_id']??0);$a['body']=trim((string)($action['body']??''));
             $q=$pdo->prepare('SELECT title FROM contents WHERE id=?');$q->execute([$a['content_id']]);$title=$q->fetchColumn();
@@ -127,7 +159,16 @@ final class PanelAgentService {
         if(!Auth::can(self::PERMISSIONS[$type]))throw new \RuntimeException('Sem permissão para esta operação.');
         self::validate($a);
         $pdo=DB::pdo();$id=0;
-        if($type==='content_update'){
+        if($type==='tariff_price'||$type==='package_price'){
+            $table=$type==='tariff_price'?'tariffs':'room_packages';$key=$type==='tariff_price'?'tariff_id':'package_id';$id=$a[$key];
+            $pdo->prepare("UPDATE {$table} SET price=? WHERE id=?")->execute([$a['price'],$id]);
+        }elseif($type==='seo_update'){
+            $pdo->prepare('UPDATE contents SET seo_title=?,meta_description=?,updated_at=NOW() WHERE id=?')->execute([$a['seo_title'],$a['meta_description'],$a['content_id']]);$id=$a['content_id'];
+        }elseif($type==='site_text'){
+            $pdo->beginTransaction();try{$raw=$pdo->query('SELECT ui_json FROM site_settings WHERE id=1 FOR UPDATE')->fetchColumn();$ui=json_decode((string)$raw,true);if(!is_array($ui))$ui=[];$ui[$a['key']]=$a['value'];$pdo->prepare('UPDATE site_settings SET ui_json=?,updated_at=NOW() WHERE id=1')->execute([json_encode($ui,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR)]);$pdo->commit();\App\Core\Site::resetCache();$id=1;}catch(\Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
+        }elseif($type==='promotion_create'){
+            $pdo->prepare('INSERT INTO promotions(title,description,code,discount_type,discount_value,start_date,end_date,active) VALUES(?,?,?,?,?,?,?,1)')->execute([$a['title'],$a['description'],$a['code'],$a['discount_type'],$a['discount_value'],$a['start_date'],$a['end_date']]);$id=(int)$pdo->lastInsertId();
+        }elseif($type==='content_update'){
             $pdo->prepare('UPDATE contents SET body=?,updated_at=NOW() WHERE id=?')->execute([$a['body'],$a['content_id']]);$id=$a['content_id'];
         }elseif($type==='room_price'){
             $pdo->prepare('UPDATE rooms SET base_price=?,updated_at=NOW() WHERE id=?')->execute([$a['price'],$a['room_id']]);$id=$a['room_id'];
