@@ -47,18 +47,18 @@ final class ICalService {
         $pdo=DB::pdo();
         $q=$pdo->prepare("SELECT * FROM suites_ical_channel_feeds WHERE id=? AND active=1");
         $q->execute([$feedId]);$feed=$q->fetch();
-        if(!$feed || empty($feed['import_url']))throw new \\RuntimeException('Calendário do canal não encontrado.');
+        if(!$feed || empty($feed['import_url']))throw new \RuntimeException('Calendário do canal não encontrado.');
         try {
             $events=$this->parse($this->fetchPublicUrl((string)$feed['import_url']));
-            if(count($events)>3000)throw new \\RuntimeException('Calendário com mais de 3000 eventos.');
+            if(count($events)>3000)throw new \RuntimeException('Calendário com mais de 3000 eventos.');
             $desired=[];
             foreach($events as $event){
                 if($event['end']<=$event['start'])continue;
-                $start=\\DateTimeImmutable::createFromFormat('!Y-m-d',$event['start']);
-                $end=\\DateTimeImmutable::createFromFormat('!Y-m-d',$event['end']);
-                if(!$start||!$end||$start->format('Y-m-d')!==$event['start']||$end->format('Y-m-d')!==$event['end'])throw new \\RuntimeException('Período inválido na origem.');
+                $start=\DateTimeImmutable::createFromFormat('!Y-m-d',$event['start']);
+                $end=\DateTimeImmutable::createFromFormat('!Y-m-d',$event['end']);
+                if(!$start||!$end||$start->format('Y-m-d')!==$event['start']||$end->format('Y-m-d')!==$event['end'])throw new \RuntimeException('Período inválido na origem.');
                 $uid='ch'.$feedId.':'.hash('sha256',(string)$event['uid']);
-                if(isset($desired[$uid]))throw new \\RuntimeException('UID duplicado no calendário do canal.');
+                if(isset($desired[$uid]))throw new \RuntimeException('UID duplicado no calendário do canal.');
                 $desired[$uid]=['uid'=>$uid,'start'=>$event['start'],'end'=>$event['end']];
             }
             // A zero-event feed could represent a transient/partial provider response.
@@ -91,7 +91,7 @@ final class ICalService {
             $pdo->prepare("UPDATE suites_ical_channel_feeds SET last_sync_at=NOW(),last_error=?,updated_at=NOW() WHERE id=?")->execute([$note,$feedId]);
             $pdo->commit();
             return ['imported'=>count($desired),'conflicts'=>$conflicts,'preserved'=>false];
-        }catch(\\Throwable $e){
+        }catch(\Throwable $e){
             if($pdo->inTransaction())$pdo->rollBack();
             $pdo->prepare("UPDATE suites_ical_channel_feeds SET last_error=?,updated_at=NOW() WHERE id=?")->execute([mb_substr($e->getMessage(),0,600),$feedId]);
             throw $e;
