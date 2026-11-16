@@ -26,7 +26,7 @@ $dialogs=[];
 if($tab==='general'){
   $h.='<section class="ms-block"><h2>Configuração do mapa</h2><div class="ms-grid">';
   $h.='<a class="ms-card" href="index.php?p=rooms"><strong>'.panelCardIcon('home').' Unidades cadastradas</strong><small>'.count($units).' unidade(s) ativa(s). Os nomes são definidos exclusivamente no cadastro do estabelecimento.</small></a>';
-  $h.='<a class="ms-card" href="index.php?p=tariffs"><strong>'.panelCardIcon('calendar').' Diárias e tarifas</strong><small>Valores utilizados no cálculo das reservas e exibidos no mapa.</small></a>';
+  $h.='<a class="ms-card" href="index.php?p=rooms"><strong>'.panelCardIcon('calendar').' Preços e pacotes por acomodação</strong><small>Selecione a unidade para definir seus valores, diárias e pacotes.</small></a>';
   $h.='<a class="ms-card" href="index.php?p=reservations"><strong>'.panelCardIcon('payments').' Reservas</strong><small>Gerenciar entradas, saídas e disponibilidade.</small></a>';
   $h.='<a class="ms-card" href="index.php?p=map_settings&tab=integrations"><strong>'.panelCardIcon('calendar').' Integrações de calendários</strong><small>Conectar canais às unidades já cadastradas.</small></a>';
   $h.='</div></section>';
