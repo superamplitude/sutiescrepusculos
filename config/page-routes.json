@@ -547,5 +547,12 @@
     "methods": [
       "GET"
     ]
+  },
+  "financeiro": {
+    "file": "financeiro.php",
+    "access": "admin",
+    "methods": [
+      "GET"
+    ]
   }
 }
