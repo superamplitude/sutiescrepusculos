@@ -34,7 +34,7 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
     $roomsNoPrice=(int)$pdo->query("SELECT COUNT(*) FROM rooms WHERE active=1 AND base_price<=0")->fetchColumn();
     $icalErrors=(int)$pdo->query("SELECT COUNT(*) FROM ical_feeds WHERE active=1 AND last_error IS NOT NULL AND last_error<>''")->fetchColumn();
 
-    $h.='<section class="superadmin-strip"><div><span class="eyebrow">SUPER ADMIN</span><h2>Operação em tempo real</h2><p>Todos os números abaixo vêm diretamente do banco publicado.</p></div><div class="quick-actions"><a class="btn" href="index.php?p=reservation_new">+ Pré-reserva</a><a class="btn secondary" href="index.php?p=tariffs">+ Tarifa</a><a class="btn secondary" href="index.php?p=rooms">Acomodações</a><a class="btn secondary" href="index.php?p=map">Mapa 15 dias</a></div></section>';
+    $h.='<section class="superadmin-strip"><div><span class="eyebrow">SUPER ADMIN</span><h2>Operação em tempo real</h2><p>Todos os números abaixo vêm diretamente do banco publicado.</p></div><div class="quick-actions"><a class="btn" href="index.php?p=reservation_new">+ Pré-reserva</a><a class="btn secondary" href="index.php?p=rooms">Acomodações</a><a class="btn secondary" href="index.php?p=map">Mapa 15 dias</a></div></section>';
 
     $h.='<div class="admin-kpi-grid super-kpis">
       <a class="admin-kpi" href="index.php?p=map"><span>Ocupação hoje</span><b>'.$occupancyPct.'%</b><small>'.$occupiedToday.' ocupada(s) · '.$availableToday.' disponível(is)</small></a>
@@ -42,8 +42,8 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
       <a class="admin-kpi" href="index.php?p=reservations"><span>Aguardando ação</span><b>'.$pendingApproval.'</b><small>Pré-reserva / aprovação</small></a>
       <a class="admin-kpi" href="index.php?p=payments"><span>A receber</span><b>'.money($pendingPaymentAmount).'</b><small>'.$pendingPayments.' pagamento(s) pendente(s)</small></a>
       <a class="admin-kpi" href="index.php?p=payments"><span>Recebido no mês</span><b>'.money($revenue).'</b><small>Pagamentos confirmados</small></a>
-      <a class="admin-kpi" href="index.php?p=tariffs"><span>Diária-base média</span><b>'.money($avgBase).'</b><small>'.money($minBase).' a '.money($maxBase).'</small></a>
-      <a class="admin-kpi" href="index.php?p=tariffs"><span>Tarifas vigentes</span><b>'.$activeTariffs.'</b><small>Preços especiais ativos hoje</small></a>
+      <a class="admin-kpi" href="index.php?p=rooms"><span>Diária-base média</span><b>'.money($avgBase).'</b><small>'.money($minBase).' a '.money($maxBase).'</small></a>
+      <a class="admin-kpi" href="index.php?p=rooms"><span>Tarifas vigentes</span><b>'.$activeTariffs.'</b><small>Preços especiais ativos hoje</small></a>
       <a class="admin-kpi" href="index.php?p=messages"><span>Atendimentos</span><b>'.$openMessages.'</b><small>Conversas abertas</small></a>
     </div>';
 
@@ -70,8 +70,8 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
     $h.='</table></div></section>';
 
     $rates=$pdo->query("SELECT r.id,r.name,r.base_price,r.min_nights,r.extra_guest_fee,r.cleaning_fee,(SELECT t.price FROM tariffs t WHERE t.room_id=r.id AND t.active=1 AND CURDATE() BETWEEN t.start_date AND t.end_date ORDER BY t.priority DESC,t.id DESC LIMIT 1) current_tariff FROM rooms r WHERE r.active=1 ORDER BY r.name")->fetchAll();
-    $h.='<section class="card"><div class="card-head"><h2>Diárias e tarifas</h2><a href="index.php?p=tariffs">Gerenciar tarifas</a></div><div class="table-scroll"><table><tr><th>Acomodação</th><th>Diária-base</th><th>Tarifa hoje</th><th>Mín. noites</th><th>Hóspede extra</th><th>Limpeza</th></tr>';
-    foreach($rates as $r)$h.='<tr><td><a href="index.php?p=rooms&id='.$r['id'].'">'.U::e($r['name']).'</a></td><td>'.money((float)$r['base_price']).'</td><td>'.($r['current_tariff']!==null?money((float)$r['current_tariff']):'<span class="muted">diária-base</span>').'</td><td>'.(int)$r['min_nights'].'</td><td>'.money((float)$r['extra_guest_fee']).'</td><td>'.money((float)$r['cleaning_fee']).'</td></tr>';
+    $h.='<section class="card"><div class="card-head"><h2>Diárias e tarifas</h2><a href="index.php?p=rooms">Gerenciar nas acomodações</a></div><div class="table-scroll"><table><tr><th>Acomodação</th><th>Diária-base</th><th>Tarifa hoje</th><th>Mín. noites</th><th>Hóspede extra</th><th>Limpeza</th></tr>';
+    foreach($rates as $r)$h.='<tr><td><a href="index.php?p=room_manage&view=edit&id='.$r['id'].'&section=diaria#room-pricing">'.U::e($r['name']).'</a></td><td>'.money((float)$r['base_price']).'</td><td>'.($r['current_tariff']!==null?money((float)$r['current_tariff']):'<span class="muted">diária-base</span>').'</td><td>'.(int)$r['min_nights'].'</td><td>'.money((float)$r['extra_guest_fee']).'</td><td>'.money((float)$r['cleaning_fee']).'</td></tr>';
     if(!$rates)$h.='<tr><td colspan="6" class="muted">Nenhuma acomodação ativa.</td></tr>';
     $h.='</table></div></section></div>';
 
