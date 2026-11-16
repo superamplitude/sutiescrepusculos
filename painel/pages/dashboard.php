@@ -39,6 +39,25 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
 
     $h.='<section class="superadmin-strip"><div><span class="eyebrow">SUPER ADMIN</span><h2>Operação em tempo real</h2><p>Todos os números abaixo vêm diretamente do banco publicado.</p></div><div class="quick-actions"><a class="btn" href="index.php?p=reservation_new">+ Pré-reserva</a><a class="btn" style="background:#ef7c21;border-color:#dc670f;color:#fff;font-weight:700" href="index.php?p=messages" aria-label="Abrir atendimento, '.$pendingChat.' conversa(s) aguardando resposta">'.panelCardIcon('chat').' Atendimento <span style="display:inline-flex;align-items:center;justify-content:center;min-width:25px;height:25px;margin-left:5px;border-radius:14px;background:#fff;color:#a94c0a;padding:0 5px">'.(int)$pendingChat.'</span></a><a class="btn secondary" href="index.php?p=rooms">Acomodações</a><a class="btn secondary" href="index.php?p=map">Mapa 15 dias</a></div></section>';
 
+    $h.='<style>
+    .super-kpis{display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;gap:7px!important;margin-bottom:14px!important}
+    .super-kpis .admin-kpi{padding:10px 9px!important;min-height:83px;display:flex;flex-direction:column;gap:2px;min-width:0;border-radius:9px!important}
+    .super-kpis .admin-kpi span{font-size:10px!important;line-height:1.25;white-space:normal}
+    .super-kpis .admin-kpi b{font-size:19px!important;line-height:1.16;margin:1px 0!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .super-kpis .admin-kpi small{font-size:9px!important;line-height:1.2!important}
+    .daily-map-scroll{overflow-x:auto;max-width:100%;border:1px solid #d9e4de;border-radius:10px}
+    .daily-map-grid{display:grid;grid-template-columns:minmax(145px,1.7fr) repeat(15,minmax(51px,1fr));min-width:920px;gap:1px;background:#dce8e2}
+    .daily-map-cell{padding:7px 4px;min-height:34px;text-align:center;background:white;font-size:10px;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+    .daily-map-unit{justify-content:flex-start;text-align:left;font-weight:600;padding-left:10px;position:sticky;left:0;background:#fff;z-index:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .daily-map-head{background:#edf4ef;font-weight:700}
+    .daily-map-reserved{background:#d7e8ff;color:#18446e}
+    .daily-map-block{background:#fbe4c7;color:#7c4609}
+    .daily-map-available{color:#507866}
+    .daily-map-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:9px;font-size:11px;color:#516960}
+    .daily-map-legend b{display:inline-block;width:11px;height:11px;margin-right:4px;vertical-align:-1px;border:1px solid #b8c9bf;border-radius:3px}
+    @media(max-width:1450px){.super-kpis{grid-template-columns:repeat(8,minmax(105px,1fr))!important;overflow-x:auto;scrollbar-width:thin}}
+    @media(max-width:720px){.super-kpis{grid-template-columns:repeat(8,minmax(104px,1fr))!important}}
+    </style>';
     $h.='<div class="admin-kpi-grid super-kpis">
       <a class="admin-kpi" href="index.php?p=map"><span>Ocupação hoje</span><b>'.$occupancyPct.'%</b><small>'.$occupiedToday.' ocupada(s) · '.$availableToday.' disponível(is)</small></a>
       <a class="admin-kpi" href="index.php?p=reservations"><span>Reservas do mês</span><b>'.$monthReservations.'</b><small>'.money($monthBooked).' em hospedagens</small></a>
@@ -52,19 +71,44 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
 
     $periodStart=new DateTimeImmutable('today');
     $periodEnd=$periodStart->modify('+15 days');
-    $q=$pdo->prepare("SELECT room_id,checkin,checkout FROM reservations WHERE status IN('paga','confirmada') AND checkin<? AND checkout>?");
+    $unitRows=$pdo->query("SELECT id,name FROM rooms WHERE active=1 AND status='active' AND code NOT LIKE '__deleted__%' ORDER BY name")->fetchAll();
+    $q=$pdo->prepare("SELECT room_id,checkin,checkout,status FROM reservations WHERE status NOT IN('cancelada','recusada','expirada') AND checkin<? AND checkout>?");
     $q->execute([$periodEnd->format('Y-m-d'),$periodStart->format('Y-m-d')]);$occRows=$q->fetchAll();
     $q=$pdo->prepare("SELECT room_id,start_date,end_date FROM room_blocks WHERE start_date<? AND end_date>?");
     $q->execute([$periodEnd->format('Y-m-d'),$periodStart->format('Y-m-d')]);$blockRows=$q->fetchAll();
-    $h.='<section class="card"><div class="card-head"><div><h2>Ocupação — próximos 15 dias</h2><p class="muted">Reservas confirmadas + bloqueios operacionais.</p></div><a href="index.php?p=map">Abrir mapa completo</a></div><div class="occupancy-grid">';
-    for($i=0;$i<15;$i++){
-      $d=$periodStart->modify("+$i days");$ds=$d->format('Y-m-d');$unavailable=[];$reserved=[];
-      foreach($occRows as $or){if($ds>=$or['checkin']&&$ds<$or['checkout']){$unavailable[(int)$or['room_id']]=1;$reserved[(int)$or['room_id']]=1;}}
-      foreach($blockRows as $br){if($ds>=$br['start_date']&&$ds<$br['end_date'])$unavailable[(int)$br['room_id']]=1;}
-      $un=count($unavailable);$res=count($reserved);$avail=max(0,$totalRooms-$un);$pct=$totalRooms>0?round(($res/$totalRooms)*100):0;
-      $h.='<div class="occupancy-day"><b>'.$d->format('d/m').'</b><small>'.$d->format('D').'</small><strong>'.$pct.'%</strong><span>'.$res.' reserv. · '.$avail.' livre(s)</span></div>';
+    $reservationDays=[];$blockedDays=[];
+    foreach($occRows as $entry){
+      for($day=0;$day<15;$day++){
+        $ds=$periodStart->modify("+$day days")->format('Y-m-d');
+        if($ds>=$entry['checkin']&&$ds<$entry['checkout'])$reservationDays[(int)$entry['room_id']][$day]=1;
+      }
     }
-    $h.='</div></section>';
+    foreach($blockRows as $entry){
+      for($day=0;$day<15;$day++){
+        $ds=$periodStart->modify("+$day days")->format('Y-m-d');
+        if($ds>=$entry['start_date']&&$ds<$entry['end_date'])$blockedDays[(int)$entry['room_id']][$day]=1;
+      }
+    }
+    $h.='<section class="card"><div class="card-head"><div><h2>Ocupação — próximos 15 dias</h2><p class="muted">Reservas confirmadas + bloqueios operacionais.</p></div><a href="index.php?p=map">Abrir mapa completo</a></div><div class="daily-map-scroll"><div class="daily-map-grid" role="table" aria-label="Mapa de diárias dos próximos quinze dias">';
+    $h.='<div class="daily-map-cell daily-map-head daily-map-unit" role="columnheader">Acomodação</div>';
+    for($day=0;$day<15;$day++){
+      $date=$periodStart->modify("+$day days");
+      $h.='<div class="daily-map-cell daily-map-head" role="columnheader">'.$date->format('d/m').'</div>';
+    }
+    foreach($unitRows as $room){
+      $rid=(int)$room['id'];
+      $h.='<div class="daily-map-cell daily-map-unit" role="rowheader">'.U::e($room['name']).'</div>';
+      for($day=0;$day<15;$day++){
+        $reserved=!empty($reservationDays[$rid][$day]);
+        $blocked=!empty($blockedDays[$rid][$day]);
+        $date=$periodStart->modify("+$day days")->format('Y-m-d');
+        $state=$reserved?'Reservado':($blocked?'Bloqueado':'Livre');
+        $class=$reserved?'daily-map-reserved':($blocked?'daily-map-block':'daily-map-available');
+        $h.='<div class="daily-map-cell '.$class.'" role="cell" title="'.U::e($room['name']).' · '.$date.' · '.$state.'">'.($reserved?'●':($blocked?'■':'–')).'</div>';
+      }
+    }
+    if(!$unitRows)$h.='<div class="daily-map-cell">Nenhuma acomodação ativa.</div>';
+    $h.='</div></div><div class="daily-map-legend"><span><b style="background:#d7e8ff"></b>Reservado</span><span><b style="background:#fbe4c7"></b>Bloqueado</span><span><b style="background:#fff"></b>Livre</span></div></section>';
 
     $next=$pdo->query("SELECT r.id,r.code,r.checkin,r.checkout,r.status,r.total,r.source,g.name guest,rm.name room FROM reservations r JOIN guests g ON g.id=r.guest_id JOIN rooms rm ON rm.id=r.room_id WHERE r.checkout>=CURDATE() AND r.status IN('pre_reserva','aguardando_aprovacao','aguardando_pagamento','paga','confirmada') ORDER BY r.checkin,r.id LIMIT 12")->fetchAll();
     $h.='<div class="admin-dashboard-grid"><section class="card"><div class="card-head"><h2>Próximas reservas</h2><a href="index.php?p=reservations">Ver todas</a></div><div class="table-scroll"><table><tr><th>Código</th><th>Hóspede</th><th>Acomodação</th><th>Entrada</th><th>Saída</th><th>Total</th><th>Status</th></tr>';
