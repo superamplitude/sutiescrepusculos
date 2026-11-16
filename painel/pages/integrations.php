@@ -13,14 +13,13 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
       if($isSecret){if($v==='')continue;$v=Secret::encrypt($v);}
       $clean[$k]=$v;
     }
-    $pdo->prepare("UPDATE integrations SET enabled=?,config_json=?,status=?,updated_at=NOW() WHERE type=?")->execute([isset($_POST['enabled'])?1:0,json_encode($clean,JSON_UNESCAPED_UNICODE),isset($_POST['enabled'])?'configured_unverified':'not_configured',$type]);U::flash('ok','Integração salva. Ainda precisa ser testada/homologada.');U::redirect('index.php?p=integrations');
+    $pdo->prepare("UPDATE integrations SET enabled=?,config_json=?,status=?,updated_at=NOW() WHERE type=?")->execute([isset($_POST['enabled'])?1:0,json_encode($clean,JSON_UNESCAPED_UNICODE),isset($_POST['enabled'])?'configured_unverified':'not_configured',$type]);U::flash('ok','Integração salva. Ainda precisa ser testada/homologada.');U::redirect($type==='ical'?'index.php?p=map_settings&tab=integrations':'index.php?p=integrations');
   }
   $rows=$pdo->query("SELECT * FROM integrations WHERE type<>'whatsapp' ORDER BY FIELD(type,'pix','instagram','email','ical','maps'),type")->fetchAll();$by=[];foreach($rows as $r)$by[$r['type']]=$r;
   $definitions=[
     'pix'=>['title'=>'PIX','desc'=>'Gateway de pagamento. Não ativa cobrança automática sem credenciais reais.','fields'=>['provider'=>'Provedor (ex.: Mercado Pago / Efí)','access_token'=>'Access Token / credencial','public_key'=>'Public Key, se houver','webhook_secret'=>'Segredo do webhook','pix_key'=>'Chave PIX da pousada, quando aplicável']],
     'instagram'=>['title'=>'Meta · Facebook e Instagram','desc'=>'Campos para Meta Business, páginas, Instagram e API oficial. Salvar não autoriza publicação nem comprova conexão; requer permissões e teste OAuth/API.','fields'=>['instagram_account_id'=>'Instagram Business Account ID','page_id'=>'Facebook Page ID vinculado','business_id'=>'Meta Business ID','app_id'=>'Meta App ID','app_secret'=>'Meta App Secret','access_token'=>'Page Access Token / Token de acesso','verify_token'=>'Token de verificação do webhook','ad_account_id'=>'Meta Ads Account ID']],
     'email'=>['title'=>'E-mail SMTP','desc'=>'Servidor para notificações transacionais.','fields'=>['host'=>'Servidor SMTP','port'=>'Porta','encryption'=>'Segurança (ssl/tls)','username'=>'Usuário','password'=>'Senha','from_email'=>'E-mail remetente','from_name'=>'Nome do remetente']],
-    'ical'=>['title'=>'iCal','desc'=>'Sincronização de calendários por unidade.','fields'=>['sync_mode'=>'Modo (manual/cron)','cron_secret'=>'Segredo do cron','notes'=>'Observações de configuração']],
     'maps'=>['title'=>'Google · Maps, Analytics, Search Console e SEO','desc'=>'Configurações do Google; cada produto requer API habilitada, permissões e homologação específica. Não enviar chaves para o navegador.','fields'=>['provider'=>'Provedor de mapas (OpenStreetMap/Google)','api_key'=>'Google Maps API Key','ga4_measurement_id'=>'GA4 Measurement ID (G-...)','gtm_container_id'=>'Google Tag Manager ID (GTM-...)','search_console_site_url'=>'Search Console: URL verificada da propriedade','google_site_verification'=>'Código de verificação Google','google_service_account_key'=>'Credencial de serviço Google (somente se exigida)']]
   ];
   // Keep every existing integration action and field; present them only in focused dialogs.
@@ -70,45 +69,6 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
     $dialogs[]=[$id,$def['title'],$body];
   }
   $h.='</div>';
-  $h.='<section id="ical-rooms"><div class="ig-head"><h2>Calendários por unidade</h2></div><div class="ig-board">';
-  $roomsIcal=$pdo->query("SELECT r.id,r.name,f.id feed_id,f.export_token,f.import_url,f.active,f.last_sync_at,f.last_error FROM rooms r LEFT JOIN ical_feeds f ON f.room_id=r.id ORDER BY r.name")->fetchAll();
-  foreach($roomsIcal as $ir){
-    $id='ig-room-'.(int)$ir['id'];
-    $export=$ir['export_token']?('ical.php?token='.$ir['export_token']):'Será criado ao salvar';
-    $state=empty($ir['import_url'])?'Sem importação':($ir['active']?'Ativo':'Desativado');
-    $h.='<button type="button" class="ig-tile" data-ig-open="'.$id.'"><span class="ig-title">'.U::e($ir['name']).'</span><span class="ig-state">'.U::e($state).'</span><span class="ig-meta">Última sincronização: '.U::e($ir['last_sync_at']?:'nunca').'</span></button>';
-    $body='<p class="ig-description">Calendário de exportação e importação da unidade.</p>';
-    if($ir['last_error'])$body.='<p class="alert error">'.U::e($ir['last_error']).'</p>';
-    $body.='<form method="post" action="index.php?p=ical_save">'.Csrf::field().'<input type="hidden" name="room_id" value="'.(int)$ir['id'].'">';
-    $body.='<label>Feed de exportação<input type="text" readonly value="'.U::e($export).'"></label>';
-    $body.=row('URL iCal para importar','import_url',$ir['import_url']??'');
-    $body.=row('Ativo','active',$ir['active']??1,'checkbox');
-    $body.='<button type="submit">Salvar iCal</button></form>';
-    if($ir['feed_id']&&$ir['import_url']){
-      $body.='<hr class="ig-division"><form method="post" action="index.php?p=ical_sync">'.Csrf::field().'<input type="hidden" name="feed_id" value="'.(int)$ir['feed_id'].'"><button type="submit" class="secondary">Sincronizar agora</button></form>';
-    }
-    $dialogs[]=[$id,$ir['name'],$body];
-  }
-  $h.='</div></section>';
-  $h.='<section id="ical-channels"><div class="ig-head"><h2>Calendários por canal</h2></div><div class="ig-board">';
-  $feeds=$pdo->query("SELECT f.*,r.name room_name FROM suites_ical_channel_feeds f JOIN rooms r ON r.id=f.room_id ORDER BY r.name,f.channel,f.id")->fetchAll();
-  $roomNames=$pdo->query("SELECT id,name FROM rooms WHERE active=1 ORDER BY name")->fetchAll();
-  $h.='<button class="ig-tile" type="button" data-ig-open="ig-new-channel"><span class="ig-title">+ Adicionar canal</span><span class="ig-state">Novo</span><span class="ig-meta">Vincular Airbnb, Booking.com, Expedia ou outro calendário iCal</span></button>';
-  $newBody='<p class="ig-description">Sincronização iCal somente de disponibilidade; tarifas e mensagens dependem de conectores autorizados.</p><form method="post" action="index.php?p=ical_save">'.Csrf::field().'<input type="hidden" name="calendar_mode" value="channel"><label>Unidade<select name="room_id" required>';
-  foreach($roomNames as $rr)$newBody.='<option value="'.(int)$rr['id'].'">'.U::e($rr['name']).'</option>';
-  $newBody.='</select></label><label>Canal<select name="channel"><option value="airbnb">Airbnb</option><option value="booking">Booking.com</option><option value="expedia">Expedia</option><option value="other">Outro</option></select></label><label>URL iCal HTTPS<input type="url" name="import_url" maxlength="1900" placeholder="https://..." required></label><label><input type="checkbox" name="active" checked> Ativo</label><button type="submit">Adicionar canal</button></form>';
-  $dialogs[]=['ig-new-channel','Adicionar canal',$newBody];
-  foreach($feeds as $feed){
-    $id='ig-channel-'.(int)$feed['id'];
-    $name=$feed['room_name'].' · '.ucfirst((string)$feed['channel']);
-    $h.='<button type="button" class="ig-tile" data-ig-open="'.$id.'"><span class="ig-title">'.U::e($name).'</span><span class="ig-state">'.((int)$feed['active']?'Ativo':'Desativado').'</span><span class="ig-meta">Última sincronização: '.U::e($feed['last_sync_at']?:'nunca').'</span></button>';
-    $body='<p class="ig-description">Apenas bloqueios deste canal serão atualizados.</p>';
-    if($feed['last_error'])$body.='<p class="alert error">'.U::e($feed['last_error']).'</p>';
-    $body.='<form method="post" action="index.php?p=ical_save">'.Csrf::field().'<input type="hidden" name="calendar_mode" value="channel"><input type="hidden" name="channel_feed_id" value="'.(int)$feed['id'].'"><input type="hidden" name="room_id" value="'.(int)$feed['room_id'].'"><input type="hidden" name="channel" value="'.U::e($feed['channel']).'"><label>Endereço do calendário<input name="import_url" type="url" maxlength="1900" value="'.U::e($feed['import_url']).'" required></label><label><input type="checkbox" name="active"'.((int)$feed['active']?' checked':'').'> Ativo</label><button type="submit">Salvar canal</button></form>';
-    if($feed['active'])$body.='<hr class="ig-division"><form method="post" action="index.php?p=ical_sync">'.Csrf::field().'<input type="hidden" name="calendar_mode" value="channel"><input type="hidden" name="feed_id" value="'.(int)$feed['id'].'"><button class="secondary" type="submit">Sincronizar agora</button></form>';
-    $dialogs[]=[$id,$name,$body];
-  }
-  $h.='</div></section>';
   foreach($dialogs as [$id,$title,$body])$makeDialog($id,$title,$body);
   $h.='<script>
   (()=>{const dialogs=[...document.querySelectorAll(".ig-dialog")];let opener=null;
