@@ -10,6 +10,9 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   $todayCheckouts=(int)$pdo->query("SELECT COUNT(*) FROM reservations WHERE checkout=CURDATE() AND status IN('paga','confirmada')")->fetchColumn();
   $pendingPayments=(int)$pdo->query("SELECT COUNT(*) FROM payments WHERE status='pending'")->fetchColumn();
   $newContacts=(int)$pdo->query("SELECT COUNT(*) FROM contact_messages WHERE status='new'")->fetchColumn();
+  // Pending = open conversation whose latest message came from the guest;
+  // a conversation with a staff reply does not count as unattended.
+  $pendingChat=(int)$pdo->query("SELECT COUNT(*) FROM conversations c WHERE c.status='open' AND NOT EXISTS (SELECT 1 FROM suites_chat_visibility v WHERE v.conversation_id=c.id AND (v.archived_at IS NOT NULL OR v.deleted_at IS NOT NULL)) AND (SELECT m.sender_type FROM messages m WHERE m.conversation_id=c.id ORDER BY m.id DESC LIMIT 1)='guest'")->fetchColumn();
   $openMessages=(int)$pdo->query("SELECT COUNT(*) FROM conversations WHERE status='open'")->fetchColumn();
   $revenue=(float)$pdo->query("SELECT COALESCE(SUM(amount),0) FROM payments WHERE status='paid' AND DATE_FORMAT(paid_at,'%Y-%m')=DATE_FORMAT(CURDATE(),'%Y-%m')")->fetchColumn();
 
@@ -34,7 +37,7 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
     $roomsNoPrice=(int)$pdo->query("SELECT COUNT(*) FROM rooms WHERE active=1 AND base_price<=0")->fetchColumn();
     $icalErrors=(int)$pdo->query("SELECT COUNT(*) FROM ical_feeds WHERE active=1 AND last_error IS NOT NULL AND last_error<>''")->fetchColumn();
 
-    $h.='<section class="superadmin-strip"><div><span class="eyebrow">SUPER ADMIN</span><h2>Operação em tempo real</h2><p>Todos os números abaixo vêm diretamente do banco publicado.</p></div><div class="quick-actions"><a class="btn" href="index.php?p=reservation_new">+ Pré-reserva</a><a class="btn secondary" href="index.php?p=rooms">Acomodações</a><a class="btn secondary" href="index.php?p=map">Mapa 15 dias</a></div></section>';
+    $h.='<section class="superadmin-strip"><div><span class="eyebrow">SUPER ADMIN</span><h2>Operação em tempo real</h2><p>Todos os números abaixo vêm diretamente do banco publicado.</p></div><div class="quick-actions"><a class="btn" href="index.php?p=reservation_new">+ Pré-reserva</a><a class="btn" style="background:#ef7c21;border-color:#dc670f;color:#fff;font-weight:700" href="index.php?p=messages" aria-label="Abrir atendimento, '.$pendingChat.' conversa(s) aguardando resposta">'.panelCardIcon('chat').' Atendimento <span style="display:inline-flex;align-items:center;justify-content:center;min-width:25px;height:25px;margin-left:5px;border-radius:14px;background:#fff;color:#a94c0a;padding:0 5px">'.(int)$pendingChat.'</span></a><a class="btn secondary" href="index.php?p=rooms">Acomodações</a><a class="btn secondary" href="index.php?p=map">Mapa 15 dias</a></div></section>';
 
     $h.='<div class="admin-kpi-grid super-kpis">
       <a class="admin-kpi" href="index.php?p=map"><span>Ocupação hoje</span><b>'.$occupancyPct.'%</b><small>'.$occupiedToday.' ocupada(s) · '.$availableToday.' disponível(is)</small></a>
