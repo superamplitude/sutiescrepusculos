@@ -63,7 +63,7 @@ body.admin-mode .panel-card-icon svg{display:block;width:21px;height:21px}
       </div>
     </details>
 
-    <details name="admin-menu" class="admin-nav-group" <?=in_array($adminPage,['reservations','map','guests','comandas'],true)?'open':''?>>
+    <details name="admin-menu" class="admin-nav-group" <?=in_array($adminPage,['reservations','map','guests','comandas','products_services'],true)?'open':''?>>
       <summary>Reservas</summary>
       <div class="admin-nav-group-links">
         <a href="/painel/reservations.php" class="<?=$adminPage==='reservations'?'active':''?>"><span class="nav-dot"></span><span>Reservas</span></a>
@@ -71,6 +71,7 @@ body.admin-mode .panel-card-icon svg{display:block;width:21px;height:21px}
         <a href="/painel/guests.php" class="<?=$adminPage==='guests'?'active':''?>"><span class="nav-dot"></span><span>Hóspedes</span></a>
         <?php if(Auth::isAdmin()||Auth::isSuperAdmin()||Auth::can('reservations.manage')):?>
         <a href="/painel/comandas.php" class="<?=$adminPage==='comandas'?'active':''?>"><span class="nav-dot"></span><span>Comandas / Consumo</span></a>
+        <a href="/painel/products_services.php" class="<?=$adminPage==='products_services'?'active':''?>"><span class="nav-dot"></span><span>Produtos e Serviços</span></a>
         <?php endif;?>
       </div>
     </details>
