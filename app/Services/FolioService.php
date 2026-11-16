@@ -26,6 +26,15 @@ final class FolioService {
      ->execute([$reservationId,$description,$qty,$price,round($qty*$price,2),$actor]);$pdo->commit();
   }catch(\Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
  }
+ /** Secure item selection: description and unit price come from server catalogue, not form fields. */
+ public static function catalogItem(int $reservationId,int $catalogId,float $qty,int $actor):void {
+  if($catalogId<1||!is_finite($qty)||$qty<=0||$qty>10000)throw new \RuntimeException('Produto ou quantidade inválida.');
+  $pdo=DB::pdo();
+  $q=$pdo->prepare('SELECT id,name,price,active FROM suites_catalog_items WHERE id=? LIMIT 1');
+  $q->execute([$catalogId]);$product=$q->fetch();
+  if(!$product||(int)$product['active']!==1)throw new \RuntimeException('Produto ou serviço indisponível.');
+  self::item($reservationId,(string)$product['name'],$qty,(float)$product['price'],$actor);
+ }
  public static function voidItem(int $reservationId,int $itemId,int $actor):void {
   $pdo=DB::pdo();$pdo->beginTransaction();
   try{$d=self::detail($reservationId,true);if($d['close'])throw new \RuntimeException('Conta encerrada.');
