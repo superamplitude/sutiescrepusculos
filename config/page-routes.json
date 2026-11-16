@@ -554,5 +554,13 @@
     "methods": [
       "GET"
     ]
+  },
+  "products_services": {
+    "file": "products_services.php",
+    "access": "admin",
+    "methods": [
+      "GET",
+      "POST"
+    ]
   }
 }
