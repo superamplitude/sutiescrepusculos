@@ -39,6 +39,65 @@ final class ICalService {
         }
     }
 
+    /**
+     * Synchronize one OTA calendar without deleting another channel's blocks.
+     * Legacy iCal feeds and locally created reservations/blocks remain untouched.
+     */
+    public function syncChannel(int $feedId): array {
+        $pdo=DB::pdo();
+        $q=$pdo->prepare("SELECT * FROM suites_ical_channel_feeds WHERE id=? AND active=1");
+        $q->execute([$feedId]);$feed=$q->fetch();
+        if(!$feed || empty($feed['import_url']))throw new \\RuntimeException('Calendário do canal não encontrado.');
+        try {
+            $events=$this->parse($this->fetchPublicUrl((string)$feed['import_url']));
+            if(count($events)>3000)throw new \\RuntimeException('Calendário com mais de 3000 eventos.');
+            $desired=[];
+            foreach($events as $event){
+                if($event['end']<=$event['start'])continue;
+                $start=\\DateTimeImmutable::createFromFormat('!Y-m-d',$event['start']);
+                $end=\\DateTimeImmutable::createFromFormat('!Y-m-d',$event['end']);
+                if(!$start||!$end||$start->format('Y-m-d')!==$event['start']||$end->format('Y-m-d')!==$event['end'])throw new \\RuntimeException('Período inválido na origem.');
+                $uid='ch'.$feedId.':'.hash('sha256',(string)$event['uid']);
+                if(isset($desired[$uid]))throw new \\RuntimeException('UID duplicado no calendário do canal.');
+                $desired[$uid]=['uid'=>$uid,'start'=>$event['start'],'end'=>$event['end']];
+            }
+            // A zero-event feed could represent a transient/partial provider response.
+            // Keep existing blocks rather than clearing the occupancy silently.
+            if(!$desired){
+                $pdo->prepare("UPDATE suites_ical_channel_feeds SET last_error=?,updated_at=NOW() WHERE id=?")->execute(['Calendário sem períodos; bloqueios existentes preservados para revisão.', $feedId]);
+                return ['imported'=>0,'conflicts'=>0,'preserved'=>true];
+            }
+            $pdo->beginTransaction();
+            $prefix='ch'.$feedId.':%';
+            $q=$pdo->prepare("SELECT id,external_uid,start_date,end_date FROM room_blocks WHERE room_id=? AND source='ical' AND external_uid LIKE ? FOR UPDATE");
+            $q->execute([(int)$feed['room_id'],$prefix]);$prior=$q->fetchAll();
+            $old=[];foreach($prior as $row)$old[$row['external_uid']]=$row;
+            $conflicts=0;
+            foreach($desired as $uid=>$event){
+                $q=$pdo->prepare("SELECT COUNT(*) FROM reservations WHERE room_id=? AND status IN ('pre_reserva','aguardando_aprovacao','aguardando_pagamento','paga','confirmada') AND NOT(checkout<=? OR checkin>=?)");
+                $q->execute([(int)$feed['room_id'],$event['start'],$event['end']]);
+                $conflicts+=(int)$q->fetchColumn()>0?1:0;
+                if(isset($old[$uid])){
+                    $pdo->prepare("UPDATE room_blocks SET start_date=?,end_date=?,reason=? WHERE id=?")->execute([$event['start'],$event['end'],'Ocupado · '.mb_substr((string)$feed['channel'],0,60),(int)$old[$uid]['id']]);
+                }else{
+                    $pdo->prepare("INSERT INTO room_blocks(room_id,start_date,end_date,type,reason,created_by,source,external_uid,created_at) VALUES(?,?,?,'external',?,NULL,'ical',?,NOW())")
+                        ->execute([(int)$feed['room_id'],$event['start'],$event['end'],'Ocupado · '.mb_substr((string)$feed['channel'],0,60),$uid]);
+                }
+            }
+            foreach($old as $uid=>$row)if(!isset($desired[$uid])){
+                $pdo->prepare("DELETE FROM room_blocks WHERE id=? AND room_id=? AND source='ical' AND external_uid=?")->execute([(int)$row['id'],(int)$feed['room_id'],$uid]);
+            }
+            $note=$conflicts?"Atenção: {$conflicts} período(s) sobrepõem reservas internas. Conferir mapa.":null;
+            $pdo->prepare("UPDATE suites_ical_channel_feeds SET last_sync_at=NOW(),last_error=?,updated_at=NOW() WHERE id=?")->execute([$note,$feedId]);
+            $pdo->commit();
+            return ['imported'=>count($desired),'conflicts'=>$conflicts,'preserved'=>false];
+        }catch(\\Throwable $e){
+            if($pdo->inTransaction())$pdo->rollBack();
+            $pdo->prepare("UPDATE suites_ical_channel_feeds SET last_error=?,updated_at=NOW() WHERE id=?")->execute([mb_substr($e->getMessage(),0,600),$feedId]);
+            throw $e;
+        }
+    }
+
     private function fetchPublicUrl(string $url): string {
         $u=parse_url($url);$scheme=strtolower($u['scheme']??'');$host=$u['host']??'';
         if(!in_array($scheme,['http','https'],true)||$host==='')throw new \RuntimeException('A URL iCal deve usar HTTP ou HTTPS.');
