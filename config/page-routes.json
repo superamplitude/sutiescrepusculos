@@ -540,5 +540,12 @@
       "GET",
       "POST"
     ]
+  },
+  "map_settings": {
+    "file": "map_settings.php",
+    "access": "admin",
+    "methods": [
+      "GET"
+    ]
   }
 }
