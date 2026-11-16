@@ -6,6 +6,7 @@ $channel=(string)($_GET['channel']??'all');
 if(!in_array($channel,['all','site','whatsapp','phone','other'],true))$channel='all';
 $search=mb_substr(trim((string)($_GET['search']??'')),0,90);
 $cid=(int)($_GET['id']??0);
+$view=($_GET['view']??'')==='archived'?'archived':'active';
 $pdo=DB::pdo();
 
 if(($_SERVER['REQUEST_METHOD']??'GET')==='POST'){
@@ -15,6 +16,16 @@ if(($_SERVER['REQUEST_METHOD']??'GET')==='POST'){
  $q=$pdo->prepare('SELECT id,channel,guest_id,status FROM conversations WHERE id=? LIMIT 1');$q->execute([$cid]);$conversation=$q->fetch();
  if(!$conversation){U::flash('err','Conversa não encontrada.');U::redirect('index.php?p=messages');}
  $back='index.php?p=messages&id='.$cid;
+ if(in_array($action,['archive','restore','delete'],true)){
+  $userId=(int)Auth::user()['id'];
+  $pdo->prepare("INSERT IGNORE INTO suites_chat_visibility(conversation_id,updated_at,updated_by) VALUES(?,NOW(),?)")->execute([$cid,$userId]);
+  if($action==='archive')$pdo->prepare("UPDATE suites_chat_visibility SET archived_at=NOW(),updated_at=NOW(),updated_by=? WHERE conversation_id=? AND deleted_at IS NULL")->execute([$userId,$cid]);
+  elseif($action==='restore')$pdo->prepare("UPDATE suites_chat_visibility SET archived_at=NULL,updated_at=NOW(),updated_by=? WHERE conversation_id=? AND deleted_at IS NULL")->execute([$userId,$cid]);
+  else $pdo->prepare("UPDATE suites_chat_visibility SET deleted_at=NOW(),updated_at=NOW(),updated_by=? WHERE conversation_id=?")->execute([$userId,$cid]);
+  Audit::log('conversation.'.$action,'conversation',$cid,['history_preserved'=>true]);
+  U::flash('ok',$action==='delete'?'Conversa retirada da caixa de entrada. Histórico preservado.':($action==='archive'?'Conversa arquivada.':'Conversa restaurada.'));
+  U::redirect('index.php?p=messages'.($action==='archive'?'&view=archived':''));
+ }
  if($action==='set_mode'){
   $mode=(string)($_POST['mode']??'');
   if(!in_array($mode,['human','hybrid','ai'],true)){U::flash('err','Modo inválido.');U::redirect($back);}
@@ -53,7 +64,8 @@ $q=$pdo->prepare("SELECT c.id,c.guest_id,c.reservation_id,c.channel,c.mode,c.sta
  (SELECT m.sender_type FROM messages m WHERE m.conversation_id=c.id ORDER BY m.id DESC LIMIT 1) last_sender
  FROM conversations c
  LEFT JOIN guests g ON g.id=c.guest_id LEFT JOIN reservations r ON r.id=c.reservation_id
- WHERE (?='all' OR (?='other' AND c.channel NOT IN('site','whatsapp','phone')) OR c.channel=?)
+ LEFT JOIN suites_chat_visibility visibility ON visibility.conversation_id=c.id
+ WHERE visibility.deleted_at IS NULL AND ".($view==='archived'?'visibility.archived_at IS NOT NULL':'visibility.archived_at IS NULL')." AND (?='all' OR (?='other' AND c.channel NOT IN('site','whatsapp','phone')) OR c.channel=?)
  AND (?='' OR g.name LIKE ? OR g.whatsapp LIKE ? OR g.email LIKE ? OR r.code LIKE ?)
  ORDER BY c.status='open' DESC,c.updated_at DESC LIMIT 400");
 $like='%'.$search.'%';
@@ -64,13 +76,15 @@ $selected=null;
 if($cid){
  $q=$pdo->prepare("SELECT c.*,g.name guest,g.email guest_email,g.whatsapp guest_whatsapp,g.phone guest_phone,r.code
  FROM conversations c LEFT JOIN guests g ON g.id=c.guest_id LEFT JOIN reservations r ON r.id=c.reservation_id
- WHERE c.id=? LIMIT 1");$q->execute([$cid]);$selected=$q->fetch()?:null;
+ LEFT JOIN suites_chat_visibility visibility ON visibility.conversation_id=c.id
+ WHERE c.id=? AND visibility.deleted_at IS NULL AND ".($view==='archived'?'visibility.archived_at IS NOT NULL':'visibility.archived_at IS NULL')." LIMIT 1");$q->execute([$cid]);$selected=$q->fetch()?:null;
 }
 $channels=['site'=>'Site','whatsapp'=>'WhatsApp','phone'=>'Telefone'];
 $modeNames=['human'=>'Humano','hybrid'=>'Híbrido','ai'=>'IA'];
 $escape=fn($v)=>U::e((string)$v);
-$linkContext='&channel='.rawurlencode($channel).'&search='.rawurlencode($search);
+$linkContext='&channel='.rawurlencode($channel).'&search='.rawurlencode($search).'&view='.$view;
 $h='';
+$h.='<nav style="display:flex;gap:8px;margin-bottom:10px" aria-label="Status das conversas"><a class="btn secondary" href="/painel/messages.php">Atendimento</a><a class="btn secondary" href="/painel/messages.php?view=archived">Arquivadas</a></nav>';
 $h.='<div class="unified-inbox" data-unified-inbox>';
 $h.='<aside class="inbox-sidebar" aria-label="Lista de conversas">';
 $h.='<div class="inbox-list-head"><div><h2>Conversas</h2><span>'.count($threads).' encontradas</span></div><a href="index.php?p=messages" class="inbox-refresh" aria-label="Atualizar conversas" title="Atualizar">↻</a></div>';
@@ -92,7 +106,7 @@ foreach($threads as $t){
  $label=$originName.' · '.($modeNames[$t['mode']??'']??'Híbrido');
  $h.='<a role="listitem" class="inbox-thread'.($active?' is-active':'').'" href="index.php?p=messages&id='.$id.$linkContext.'"'.($active?' aria-current="page"':'').'>'
      .'<span class="inbox-thread-avatar" aria-hidden="true">'.mb_strtoupper(mb_substr($name,0,1)).'</span>'
-     .'<span class="inbox-thread-content"><span class="inbox-thread-top"><strong>'.$escape($name).'</strong><time>'.$escape(substr($time,5,11)).'</time></span>'
+     .'<span class="inbox-thread-content"><span class="inbox-thread-top"><strong>'.$escape($name).'</strong><time>' .$escape(substr($time,5,11)).'</time></span>'
      .'<span class="inbox-thread-preview">'.$escape($preview).'</span>'
      .'<span class="inbox-thread-bottom"><span class="inbox-channel-label">'.$escape($label).'</span><span class="inbox-thread-contact">'.$escape($meta).'</span></span></span>'
      .'</a>';
@@ -109,6 +123,13 @@ if(!$selected){
  $mode=(string)$selected['mode'];$active=(string)$selected['status']==='open';
  $h.='<header class="inbox-detail-head"><div class="inbox-person"><span class="inbox-person-avatar">'.mb_strtoupper(mb_substr($name,0,1)).'</span><span><strong>'.$escape($name).'</strong><small>'.$escape($contact?:'Contato não informado').'</small></span></div>'
      .'<div class="inbox-detail-tags"><span class="inbox-channel-label">'.$escape($originName).'</span><span class="inbox-state'.($active?' is-open':'').'">'.($active?'Em atendimento':'Encerrada').'</span></div></header>';
+ $h.='<div class="inbox-actions" style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid #e0e6e3">';
+ if($view==='archived'){
+   $h.='<form method="post">'.Csrf::field().'<input type="hidden" name="conversation_id" value="'.$cid.'"><input type="hidden" name="action" value="restore"><button type="submit" class="btn secondary">Restaurar</button></form>';
+ }else{
+   $h.='<form method="post">'.Csrf::field().'<input type="hidden" name="conversation_id" value="'.$cid.'"><input type="hidden" name="action" value="archive"><button type="submit" class="btn secondary">Arquivar</button></form>';
+ }
+ $h.='<form method="post" onsubmit="return confirm(\'Excluir esta conversa da caixa de entrada? O histórico permanecerá preservado.\')">'.Csrf::field().'<input type="hidden" name="conversation_id" value="'.$cid.'"><input type="hidden" name="action" value="delete"><button type="submit" class="btn secondary">Excluir</button></form></div>';
  $h.='<div class="inbox-info"><div class="inbox-context-row"><span>Canal: <b>'.$escape($originName).'</b></span>';
  if(!empty($selected['code']))$h.='<a href="index.php?p=reservation_edit&id='.(int)$selected['reservation_id'].'">Reserva '.$escape($selected['code']).'</a>';
  if(!empty($selected['guest_id']))$h.='<a href="index.php?p=guests&id='.(int)$selected['guest_id'].'">Ficha do hóspede</a>';
