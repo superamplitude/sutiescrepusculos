@@ -7,7 +7,8 @@ $rid=(int)($_REQUEST['reservation_id']??0);
 if($_SERVER['REQUEST_METHOD']==='POST'){
  Csrf::check();$action=(string)($_POST['action']??'');$actor=(int)Auth::user()['id'];
  try{
-  if($action==='add')FolioService::item($rid,(string)($_POST['description']??''),(float)($_POST['qty']??0),(float)($_POST['unit_price']??-1),$actor);
+  if($action==='add_catalog')FolioService::catalogItem($rid,(int)($_POST['catalog_id']??0),(float)($_POST['qty']??0),$actor);
+  elseif($action==='add')FolioService::item($rid,(string)($_POST['description']??''),(float)($_POST['qty']??0),(float)($_POST['unit_price']??-1),$actor);
   elseif($action==='void')FolioService::voidItem($rid,(int)($_POST['item_id']??0),$actor);
   elseif($action==='close')FolioService::close($rid,!empty($_POST['service_fee']),$actor);
   else throw new RuntimeException('Operação inválida.');
@@ -37,7 +38,14 @@ foreach($d['items'] as $item){
 }
 $h.='</table></div>';
 if(!$closed){
- $h.='<form class=card method=post>'.Csrf::field().'<input type=hidden name=reservation_id value="'.$rid.'"><input type=hidden name=action value=add><h2>Adicionar consumo</h2><div class=grid3>'.row('Produto ou serviço','description').row('Quantidade','qty','1','number').row('Valor unitário (R$)','unit_price','0.00','number').'</div><button>Adicionar à comanda</button></form>';
+ $catalog=$pdo->query("SELECT id,name,category,unit,price FROM suites_catalog_items WHERE active=1 ORDER BY category,name")->fetchAll();
+ $h.='<div style="display:flex;justify-content:flex-end;margin:12px 0"><button class="btn" type="button" data-open-consumption>+ Adicionar consumo</button></div>';
+ $h.='<style>.consumption-modal{border:1px solid #b6c9c0;border-radius:12px;padding:0;width:min(540px,calc(100vw - 24px));max-height:90dvh;background:#fff;color:#193c34;box-shadow:0 20px 80px #152f2b66}.consumption-modal::backdrop{background:#0e281f99}.consumption-modal[open]{display:flex;flex-direction:column}.consumption-modal header{display:flex;align-items:center;justify-content:space-between;padding:15px;border-bottom:1px solid #dce9df}.consumption-modal header h2{margin:0;font-size:17px}.consumption-modal form{padding:18px;display:grid;gap:12px;overflow-y:auto}.consumption-modal form label{display:flex;flex-direction:column;gap:5px}.consumption-modal form input,.consumption-modal form select{width:100%;box-sizing:border-box}.consumption-close{padding:5px 12px;border:1px solid #bccdc1;border-radius:8px;background:#fff}</style>';
+ $h.='<dialog class="consumption-modal" id="consumptionDialog" aria-label="Adicionar consumo"><header><h2>Adicionar consumo</h2><button type="button" class="consumption-close" data-close-consumption>×</button></header><form method="post">'.Csrf::field().'<input type="hidden" name="reservation_id" value="'.$rid.'"><input type="hidden" name="action" value="add_catalog"><label>Produto ou serviço<select name="catalog_id" required><option value="">Selecione</option>';
+ foreach($catalog as $product)$h.='<option value="'.(int)$product['id'].'">'.U::e(($product['category']==='bar'?'Bar':'Serviço').' · '.$product['name'].' ('.money((float)$product['price']).' / '.$product['unit'].')').'</option>';
+ $h.='</select></label><label>Quantidade<input type="number" name="qty" min=".001" step=".001" max="10000" value="1" required></label><button type="submit"'.(!$catalog?' disabled':'').'>Adicionar à comanda</button>';
+ if(!$catalog)$h.='<p>Nenhum produto cadastrado. <a href="/painel/products_services.php">Cadastrar produtos e serviços</a></p>';
+ $h.='</form></dialog><script>(()=>{const d=document.getElementById("consumptionDialog");document.querySelector("[data-open-consumption]").addEventListener("click",()=>d.showModal());d.querySelector("[data-close-consumption]").addEventListener("click",()=>d.close());d.addEventListener("click",e=>{if(e.target===d)d.close()});})();</script>';
 }
 $h.='<div class=card><h2>Resumo da conta</h2><p>Hospedagem: <b>'.money((float)$r['total']).'</b></p><p>Consumo: <b>'.money($d['consumption']).'</b></p><p>Pagamentos já confirmados: <b>'.money($d['paid']).'</b></p>';
 if($closed)$h.='<p>Taxa de serviço: <b>'.money($d['fee']).'</b></p><p>Total: <b>'.money($d['total']).'</b></p><p>Saldo: <b>'.money($d['due']).'</b></p><a class=btn href="/painel/?p=comandas&reservation_id='.$rid.'&export=pdf">Baixar fechamento em PDF</a>';
