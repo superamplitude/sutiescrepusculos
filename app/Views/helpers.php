@@ -45,7 +45,9 @@ function money(float $value):string{
 }
 function safeUrl(?string $url):string{
   $url=trim((string)$url);if($url==='')return '';
-  if(str_starts_with($url,'storage/uploads/')||str_starts_with($url,'assets/'))return $url;
+  // Media must resolve at the public origin even when opened from /painel/.
+  if(str_starts_with($url,'storage/uploads/')||str_starts_with($url,'assets/'))return '/'.$url;
+  if(str_starts_with($url,'/storage/uploads/')||str_starts_with($url,'/assets/'))return $url;
   $scheme=strtolower((string)parse_url($url,PHP_URL_SCHEME));
   return in_array($scheme,['http','https'],true)?$url:'';
 }
