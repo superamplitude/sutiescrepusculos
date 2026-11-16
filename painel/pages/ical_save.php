@@ -24,11 +24,11 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
     }
     Audit::log('ical.channel.save','room',$room,['channel'=>$channel,'feed_id'=>$feedId]);
     U::flash('ok','Canal registrado. Use Sincronizar agora para importar os bloqueios.');
-    U::redirect('index.php?p=integrations#ical-channels');
+    U::redirect('index.php?p=map_settings&tab=integrations');
   }
   $room=(int)$_POST['room_id'];$url=trim($_POST['import_url']??'');$active=isset($_POST['active'])?1:0;
   $q=$pdo->prepare("SELECT id FROM rooms WHERE id=?");$q->execute([$room]);if(!$q->fetchColumn())throw new RuntimeException('Quarto inválido.');
   $q=$pdo->prepare("SELECT id FROM ical_feeds WHERE room_id=?");$q->execute([$room]);$id=$q->fetchColumn();
   if($id)$pdo->prepare("UPDATE ical_feeds SET import_url=?,active=?,updated_at=NOW() WHERE id=?")->execute([$url?:null,$active,$id]);
   else{$token=bin2hex(random_bytes(24));$pdo->prepare("INSERT INTO ical_feeds(room_id,export_token,import_url,active,created_at,updated_at) VALUES(?,?,?,?,NOW(),NOW())")->execute([$room,$token,$url?:null,$active]);}
-  Audit::log('ical.save','room',$room);U::flash('ok','Configuração iCal salva.');U::redirect('index.php?p=integrations#ical-rooms');
+  Audit::log('ical.save','room',$room);U::flash('ok','Configuração iCal salva.');U::redirect('index.php?p=map_settings&tab=integrations');
