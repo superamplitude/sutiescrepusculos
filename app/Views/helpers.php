@@ -2,6 +2,22 @@
 use App\Core\DB;use App\Core\Auth;use App\Core\Csrf;use App\Core\U;use App\Core\Audit;use App\Core\Secret;use App\Core\Site;use App\Services\ReservationService;use App\Services\GeminiService;use App\Services\UploadService;use App\Services\ICalService;use App\Controllers\WhatsappController;
 if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
 
+/**
+ * Rewrite legacy links without losing the first query-string delimiter.
+ * Otherwise index.php?p=messages&id=123 becomes /painel/messages.php&id=123.
+ */
+function panelRewriteModuleLinks(string $content,array $routes):string {
+  $names=array_keys($routes);
+  usort($names,static fn($a,$b)=>strlen($b)<=>strlen($a));
+  foreach($names as $name){
+    if(($routes[$name]['access']??'')!=='admin')continue;
+    $pattern='~(?<![a-zA-Z0-9/])index\.php\?p='.preg_quote($name,'~').'(?=&(?:amp;)?|["\x27\s<>#]|$)~';
+    $content=preg_replace($pattern,'/painel/'.$name.'.php',$content);
+    $content=preg_replace('~(/painel/'.preg_quote($name,'~').'\.php)&(?:amp;)?(?=[a-zA-Z_][a-zA-Z0-9_]*=)~','$1?',$content);
+  }
+  return $content;
+}
+
 function render(string $title,string $html,string $meta=''):void{
   $content=$html;
   $metaDescription=$meta;
@@ -12,10 +28,7 @@ function render(string $title,string $html,string $meta=''):void{
     // Public links still resolve against the public application root.
     $names=array_keys($list);
     usort($names,static fn($a,$b)=>strlen($b)<=>strlen($a));
-    foreach($names as $name){
-      $target=$list[$name]['access']==='admin'?'/painel/'.$name.'.php':'/index.php?p='.$name;
-      $content=preg_replace('~(?<![a-zA-Z0-9/])index\.php\?p='.preg_quote($name,'~').'(?=[&"\'\s<>#]|$)~',$target,$content);
-    }
+    $content=panelRewriteModuleLinks($content,$list);
     $content=preg_replace('~\b(src|href|poster)=(["\'])((?:assets|storage)/)~','$1=$2/$3',$content);
   }
   include __DIR__.'/layout.php';
