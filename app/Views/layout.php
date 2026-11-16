@@ -34,7 +34,12 @@ body.reservation-embed .reservation-embed-header p{font-size:12px;color:#6e827b;
 body.reservation-embed .card{margin-bottom:12px!important;padding:15px!important}
 body.reservation-embed .card h2{font-size:15px}
 @media(max-width:640px){body.reservation-embed .reservation-edit-grid{grid-template-columns:1fr}}
-</style><?php endif; ?></head>
+</style><?php endif; ?><style id="suites-admin-card-standard">
+/* Single title in the fixed panel topbar; no duplicated per-page heading. */
+body.admin-mode .admin-main .page-head{display:none!important}
+body.admin-mode .panel-card-icon{display:inline-flex;align-items:center;justify-content:center;flex:none;width:25px;height:25px;color:#127b69}
+body.admin-mode .panel-card-icon svg{display:block;width:21px;height:21px}
+</style></head>
 <body class="<?=$inAdminPanel?('admin-mode'.((($_GET['p']??'')==='reservation_edit'&&($_GET['embed']??'')==='1')?' reservation-embed':'')):'public-mode '.U::e($siteLayout)?>">
 <?php if($inAdminPanel): ?>
 <aside class="admin-sidebar">
@@ -58,21 +63,29 @@ body.reservation-embed .card h2{font-size:15px}
       </div>
     </details>
 
-    <details name="admin-menu" class="admin-nav-group" <?=in_array($adminPage,['reservations','map','guests','payments','comandas','livro_caixa'],true)?'open':''?>>
+    <details name="admin-menu" class="admin-nav-group" <?=in_array($adminPage,['reservations','map','guests','comandas'],true)?'open':''?>>
       <summary>Reservas</summary>
       <div class="admin-nav-group-links">
         <a href="/painel/reservations.php" class="<?=$adminPage==='reservations'?'active':''?>"><span class="nav-dot"></span><span>Reservas</span></a>
         <a href="/painel/map.php" class="<?=$adminPage==='map'?'active':''?>"><span class="nav-dot"></span><span>Mapa de Reservas</span></a>
         <a href="/painel/guests.php" class="<?=$adminPage==='guests'?'active':''?>"><span class="nav-dot"></span><span>Hóspedes</span></a>
-        <a href="/painel/payments.php" class="<?=$adminPage==='payments'?'active':''?>"><span class="nav-dot"></span><span>Pagamentos / PIX</span></a>
         <?php if(Auth::isAdmin()||Auth::isSuperAdmin()||Auth::can('reservations.manage')):?>
         <a href="/painel/comandas.php" class="<?=$adminPage==='comandas'?'active':''?>"><span class="nav-dot"></span><span>Comandas / Consumo</span></a>
         <?php endif;?>
-        <?php if(Auth::isAdmin()||Auth::isSuperAdmin()||Auth::can('payments.view')):?>
-        <a href="/painel/livro_caixa.php" class="<?=$adminPage==='livro_caixa'?'active':''?>"><span class="nav-dot"></span><span>Livro Caixa</span></a>
-        <?php endif;?>
       </div>
     </details>
+
+    <?php if(Auth::isAdmin()||Auth::isSuperAdmin()||Auth::can('payments.view')):?>
+    <details name="admin-menu" class="admin-nav-group" <?=in_array($adminPage,['financeiro','payments','livro_caixa'],true)?'open':''?>>
+      <summary>Financeiro</summary>
+      <div class="admin-nav-group-links">
+        <a href="/painel/financeiro.php" class="<?=in_array($adminPage,['financeiro','payments','livro_caixa'],true)?'active':''?>"><span class="nav-dot"></span><span>Financeiro</span></a>
+        <a href="/painel/payments.php" class="<?=$adminPage==='payments'?'active':''?>"><span class="nav-dot"></span><span>Pagamentos</span></a>
+        <a href="/painel/livro_caixa.php" class="<?=$adminPage==='livro_caixa'?'active':''?>"><span class="nav-dot"></span><span>Livro Caixa</span></a>
+        <?php if(Auth::isSuperAdmin()):?><a href="/painel/integrations.php?service=pix"><span class="nav-dot"></span><span>PIX</span></a><?php endif;?>
+      </div>
+    </details>
+    <?php endif;?>
 
     <details name="admin-menu" class="admin-nav-group" <?=in_array($adminPage,['messages','whatsapp_rnl','contacts_admin','content','reviews'],true)?'open':''?>>
       <summary>Atendimento e conteúdo</summary>
