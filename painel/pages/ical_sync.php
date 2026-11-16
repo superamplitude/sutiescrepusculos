@@ -10,8 +10,8 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
       $note=($result['preserved']??false)?'Calendário vazio: bloqueios anteriores preservados.':($result['imported'].' período(s) sincronizado(s), '.$result['conflicts'].' conflito(s).');
       U::flash(($result['conflicts']??0)?'err':'ok',$note);
     }catch(Throwable $e){U::flash('err',$e->getMessage());}
-    U::redirect('index.php?p=integrations#ical-channels');
+    U::redirect('index.php?p=map_settings&tab=integrations');
   }
   $id=(int)$_POST['feed_id'];
   try{$count=(new ICalService())->sync($id);U::flash('ok',"iCal sincronizado: $count período(s) importado(s).");}catch(Throwable $e){U::flash('err',$e->getMessage());}
-  U::redirect('index.php?p=integrations#ical-rooms');
+  U::redirect('index.php?p=map_settings&tab=integrations');
