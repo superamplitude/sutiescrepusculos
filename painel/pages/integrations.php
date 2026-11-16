@@ -13,22 +13,38 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
       if($isSecret){if($v==='')continue;$v=Secret::encrypt($v);}
       $clean[$k]=$v;
     }
-    $pdo->prepare("UPDATE integrations SET enabled=?,config_json=?,status=?,updated_at=NOW() WHERE type=?")->execute([isset($_POST['enabled'])?1:0,json_encode($clean,JSON_UNESCAPED_UNICODE),isset($_POST['enabled'])?'configured_unverified':'not_configured',$type]);U::flash('ok','Integração salva. Ainda precisa ser testada/homologada.');U::redirect($type==='ical'?'index.php?p=map_settings&tab=integrations':'index.php?p=integrations');
+    $scope=(string)($_POST['form_scope']??'legacy');
+    // Cards for the same provider save only their fields; do not toggle unrelated
+    // Meta/Google services because one sub-card was edited.
+    $q=$pdo->prepare("SELECT enabled FROM integrations WHERE type=?");$q->execute([$type]);$previousEnabled=(int)($q->fetchColumn()?:0);
+    $enabled=$scope==='split'?$previousEnabled:(isset($_POST['enabled'])?1:0);
+    $pdo->prepare("UPDATE integrations SET enabled=?,config_json=?,status=?,updated_at=NOW() WHERE type=?")->execute([$enabled,json_encode($clean,JSON_UNESCAPED_UNICODE),$enabled?'configured_unverified':'not_configured',$type]);
+    U::flash('ok','Configuração salva; conexão ainda não homologada.');
+    U::redirect($type==='ical'?'index.php?p=map_settings&tab=integrations':($type==='pix'?'/painel/financeiro.php':'/painel/integrations.php'));
   }
   $rows=$pdo->query("SELECT * FROM integrations WHERE type<>'whatsapp' ORDER BY FIELD(type,'pix','instagram','email','ical','maps'),type")->fetchAll();$by=[];foreach($rows as $r)$by[$r['type']]=$r;
-  $definitions=[
-    'pix'=>['title'=>'PIX','desc'=>'Gateway de pagamento. Não ativa cobrança automática sem credenciais reais.','fields'=>['provider'=>'Provedor (ex.: Mercado Pago / Efí)','access_token'=>'Access Token / credencial','public_key'=>'Public Key, se houver','webhook_secret'=>'Segredo do webhook','pix_key'=>'Chave PIX da pousada, quando aplicável']],
-    'instagram'=>['title'=>'Meta · Facebook e Instagram','desc'=>'Campos para Meta Business, páginas, Instagram e API oficial. Salvar não autoriza publicação nem comprova conexão; requer permissões e teste OAuth/API.','fields'=>['instagram_account_id'=>'Instagram Business Account ID','page_id'=>'Facebook Page ID vinculado','business_id'=>'Meta Business ID','app_id'=>'Meta App ID','app_secret'=>'Meta App Secret','access_token'=>'Page Access Token / Token de acesso','verify_token'=>'Token de verificação do webhook','ad_account_id'=>'Meta Ads Account ID']],
-    'email'=>['title'=>'E-mail SMTP','desc'=>'Servidor para notificações transacionais.','fields'=>['host'=>'Servidor SMTP','port'=>'Porta','encryption'=>'Segurança (ssl/tls)','username'=>'Usuário','password'=>'Senha','from_email'=>'E-mail remetente','from_name'=>'Nome do remetente']],
-    'maps'=>['title'=>'Google · Maps, Analytics, Search Console e SEO','desc'=>'Configurações do Google; cada produto requer API habilitada, permissões e homologação específica. Não enviar chaves para o navegador.','fields'=>['provider'=>'Provedor de mapas (OpenStreetMap/Google)','api_key'=>'Google Maps API Key','ga4_measurement_id'=>'GA4 Measurement ID (G-...)','gtm_container_id'=>'Google Tag Manager ID (GTM-...)','search_console_site_url'=>'Search Console: URL verificada da propriedade','google_site_verification'=>'Código de verificação Google','google_service_account_key'=>'Credencial de serviço Google (somente se exigida)']]
+  // Each card has its own presentation and form; Meta and Google credential stores
+  // remain the existing shared provider records to avoid losing saved secrets.
+  $cards=[
+    'instagram'=>['type'=>'instagram','title'=>'Instagram','icon'=>'instagram','desc'=>'Mensagens, comentários e recursos da conta profissional. Exige permissões Meta e teste real.','fields'=>['instagram_account_id'=>'Instagram Business Account ID','business_id'=>'Meta Business ID','app_id'=>'Meta App ID','app_secret'=>'Meta App Secret','access_token'=>'Token de acesso','verify_token'=>'Token de verificação webhook']],
+    'facebook'=>['type'=>'instagram','title'=>'Facebook','icon'=>'facebook','desc'=>'Página, Messenger e comentários com credenciais Meta compartilhadas. Não comprova conexão ativa.','fields'=>['page_id'=>'Facebook Page ID','business_id'=>'Meta Business ID','app_id'=>'Meta App ID','app_secret'=>'Meta App Secret','access_token'=>'Page Access Token','verify_token'=>'Token de verificação webhook','ad_account_id'=>'Meta Ads Account ID']],
+    'email'=>['type'=>'email','title'=>'E-mail SMTP','icon'=>'email','desc'=>'Servidor de notificações transacionais.','fields'=>['host'=>'Servidor SMTP','port'=>'Porta','encryption'=>'Segurança (ssl/tls)','username'=>'Usuário','password'=>'Senha','from_email'=>'E-mail remetente','from_name'=>'Nome do remetente']],
+    'google_maps'=>['type'=>'maps','title'=>'Google Maps','icon'=>'maps','desc'=>'Mapa e localização. Requer API habilitada e chave autorizada.','fields'=>['provider'=>'Provedor (OpenStreetMap/Google)','api_key'=>'Google Maps API Key']],
+    'google_analytics'=>['type'=>'maps','title'=>'Google Analytics','icon'=>'analytics','desc'=>'Medição GA4 por ID da propriedade.','fields'=>['ga4_measurement_id'=>'GA4 Measurement ID (G-...)']],
+    'google_tag'=>['type'=>'maps','title'=>'Google Tag Manager','icon'=>'tag','desc'=>'Gerenciador de tags com identificador do contêiner.','fields'=>['gtm_container_id'=>'Google Tag Manager ID (GTM-...)']],
+    'google_search'=>['type'=>'maps','title'=>'Google Search Console','icon'=>'search','desc'=>'Validação e propriedade no Search Console.','fields'=>['search_console_site_url'=>'URL verificada da propriedade','google_site_verification'=>'Código de verificação Google']],
+    'google_service'=>['type'=>'maps','title'=>'Google · Credenciais','icon'=>'key','desc'=>'Credencial de serviço, somente quando necessária. Não concede acesso automaticamente.','fields'=>['google_service_account_key'=>'Credencial de serviço Google']]
   ];
+  $pix=['type'=>'pix','title'=>'PIX','icon'=>'pix','desc'=>'Gateway e credenciais financeiras. Configuração separada das redes sociais e Google.','fields'=>['provider'=>'Provedor (Mercado Pago/Efí)','access_token'=>'Token / credencial','public_key'=>'Public Key','webhook_secret'=>'Segredo do webhook','pix_key'=>'Chave PIX']];
+  $isPixPage=($_GET['service']??'')==='pix';
+  if($isPixPage)$cards=['pix'=>$pix];
   // Keep every existing integration action and field; present them only in focused dialogs.
   $h=adminTitle('Integrações','Gerencie os canais sem expor formulários na página.');
   $h.='<style>
     .ig-board{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,205px),1fr));gap:12px;margin:12px 0 24px;align-items:stretch}
     .ig-tile{background:#fff;border:1px solid #a6b8b0;border-radius:11px;padding:13px;text-align:left;display:flex;flex-direction:column;gap:9px;min-height:125px;min-width:0;color:#173d34;box-shadow:0 2px 8px #16372a0a;cursor:pointer}
     .ig-tile:hover,.ig-tile:focus-visible{border-color:#117d6a;box-shadow:0 4px 15px #135d3928;outline-offset:2px}
-    .ig-title{display:block;font-weight:700;font-size:14px;overflow-wrap:anywhere}
+    .ig-title{display:flex;align-items:center;gap:9px;font-weight:700;font-size:14px;overflow-wrap:anywhere}
     .ig-meta{color:#54695e;font-size:12px;line-height:1.45;overflow-wrap:anywhere}
     .ig-state{display:inline-block;align-self:flex-start;padding:3px 8px;border:1px solid #c6d4cd;border-radius:20px;font-size:11px;background:#f4f8f5}
     .ig-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:22px 0 6px}
@@ -51,19 +67,23 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   $makeDialog=function(string $id,string $title,string $body)use(&$h):void{
     $h.='<dialog class="ig-dialog" id="'.U::e($id).'" aria-label="'.U::e($title).'"><header class="ig-dialog-head"><h2>'.U::e($title).'</h2><button class="ig-dialog-close" type="button" data-ig-close aria-label="Fechar">×</button></header><div class="ig-dialog-body">'.$body.'</div></dialog>';
   };
-  $h.='<div class="ig-head"><h2>Serviços e integrações</h2></div><div class="ig-board">';
+  $h.='<div class="ig-head"><h2>'.($isPixPage?'Configuração PIX':'Serviços e integrações').'</h2></div>';
+  if($isPixPage)$h.='<p><a href="/painel/financeiro.php">← Voltar ao Financeiro</a></p>';
+  $h.='<div class="ig-board">';
   $dialogs=[];
-  foreach($definitions as $type=>$def){
+  foreach($cards as $key=>$def){
+    $type=$def['type'];
     $r=$by[$type]??['enabled'=>0,'status'=>'not_configured','config_json'=>''];
     $cfg=json_decode($r['config_json']?:'{}',true)?:[];
-    $id='ig-service-'.$type;
-    $state=statusPt((string)$r['status']);
-    $h.='<button class="ig-tile" type="button" data-ig-open="'.U::e($id).'"><span class="ig-title">'.U::e($def['title']).'</span><span class="ig-state">'.U::e($state).'</span><span class="ig-meta">'.((int)$r['enabled']?'Habilitado':'Desabilitado').' · Configurar</span></button>';
-    $body='<p class="ig-description">'.U::e($def['desc']).'</p><form method="post">'.Csrf::field().'<input type="hidden" name="type" value="'.U::e($type).'">';
-    $body.=row('Habilitar','enabled',$r['enabled'],'checkbox');
-    foreach($def['fields'] as $key=>$label){
-      $secret=str_ends_with($key,'password')||str_contains($key,'token')||str_contains($key,'secret')||str_contains($key,'key');
-      $body.=row($label,'cfg['.$key.']',$secret?'':($cfg[$key]??''),$secret?'password':'text');
+    $id='ig-service-'.$key;
+    $hasConfig=false;
+    foreach(array_keys($def['fields']) as $field)if(trim((string)($cfg[$field]??''))!==''){$hasConfig=true;break;}
+    $state=$hasConfig?'Configurado, não testado':'Não configurado';
+    $h.='<button class="ig-tile" type="button" data-ig-open="'.U::e($id).'"><span class="ig-title">'.panelCardIcon($def['icon']).'<span>'.U::e($def['title']).'</span></span><span class="ig-state">'.U::e($state).'</span><span class="ig-meta">Configurar</span></button>';
+    $body='<p class="ig-description">'.U::e($def['desc']).'</p><form method="post" action="/painel/integrations.php'.($isPixPage?'?service=pix':'').'">'.Csrf::field().'<input type="hidden" name="type" value="'.U::e($type).'"><input type="hidden" name="form_scope" value="split">';
+    foreach($def['fields'] as $field=>$label){
+      $secret=str_ends_with($field,'password')||str_contains($field,'token')||str_contains($field,'secret')||str_contains($field,'key');
+      $body.=row($label,'cfg['.$field.']',$secret?'':($cfg[$field]??''),$secret?'password':'text');
     }
     $body.='<button type="submit">Salvar configuração</button></form>';
     $dialogs[]=[$id,$def['title'],$body];
