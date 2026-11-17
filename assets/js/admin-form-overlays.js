@@ -44,6 +44,8 @@
   const headingFallback = labels[page]?.default || "Configurar";
   const sectionButtons = new Map();
   const buttons = [];
+  const aiActions = page === "ai" ? document.createElement("div") : null;
+  if (aiActions) { aiActions.className = "admin-form-action-grid"; root.prepend(aiActions); }
 
   for (const form of forms) {
     index++;
@@ -75,11 +77,14 @@
     const wrapper = document.createElement("div");wrapper.className = "admin-form-standard-action";
     form.before(wrapper);
     wrapper.append(trigger);
+    if (aiActions) {
+      aiActions.append(wrapper);
+    }
     // Place the trigger in the section toolbar where possible.
     // Do not place buttons inside table rows or duplicate nested forms.
-    if (oldParent?.classList.contains("split") && oldParent.parentElement === root) {
+    if (!aiActions && oldParent?.classList.contains("split") && oldParent.parentElement === root) {
       root.insertBefore(wrapper, oldParent);
-    } else if (form.classList.contains("card") && oldParent === root) {
+    } else if (!aiActions && form.classList.contains("card") && oldParent === root) {
       root.insertBefore(wrapper, form);
     }
     body.append(form);
