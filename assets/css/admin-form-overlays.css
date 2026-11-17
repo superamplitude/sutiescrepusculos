@@ -1,0 +1,19 @@
+/* One panel form standard: content/listing remains visible; editors open over it. */
+body.admin-mode .admin-form-standard-action{display:flex;justify-content:flex-end;gap:8px;margin:0 0 12px}
+body.admin-mode .admin-form-standard-trigger{display:inline-flex;gap:8px;align-items:center;justify-content:center;min-height:36px}
+body.admin-mode .admin-form-standard-trigger svg{flex:none}
+body.admin-mode .admin-modalized-split{display:block!important;grid-template-columns:minmax(0,1fr)!important}
+body.admin-mode .admin-modalized-split>.card,body.admin-mode .admin-modalized-split>.table-scroll{width:100%;max-width:none;box-sizing:border-box}
+body.admin-mode .admin-form-standard-dialog{border:1px solid #9eb9ad;border-radius:14px;padding:0;width:min(760px,calc(100vw - 24px));max-height:min(91dvh,940px);background:#fff;color:#173c31;box-sizing:border-box;box-shadow:0 24px 76px #12312c66;overflow:hidden}
+body.admin-mode .admin-form-standard-dialog::backdrop{background:rgba(11,33,27,.65)}
+body.admin-mode .admin-form-standard-dialog[open]{display:flex;flex-direction:column}
+body.admin-mode .admin-form-standard-head{padding:15px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #d9e6de;flex-shrink:0;background:#fff}
+body.admin-mode .admin-form-standard-head h2{font-size:17px;margin:0;line-height:1.3}
+body.admin-mode .admin-form-standard-close{background:#fff;border:1px solid #bfd1c6;color:#183e33;border-radius:8px;padding:5px 11px;cursor:pointer;font-size:22px;line-height:1.2}
+body.admin-mode .admin-form-standard-body{padding:17px 20px 22px;overflow-y:auto;overscroll-behavior:contain;min-height:0;min-width:0}
+body.admin-mode .admin-form-standard-body form{max-width:none;width:100%;box-sizing:border-box;margin:0!important}
+body.admin-mode .admin-form-standard-body form.card{padding:0!important;border:0!important;box-shadow:none!important;background:transparent!important}
+body.admin-mode .admin-form-standard-body form .grid3{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+body.admin-mode .admin-form-standard-body form input:not([type=checkbox]):not([type=radio]),body.admin-mode .admin-form-standard-body form select,body.admin-mode .admin-form-standard-body form textarea{max-width:100%;width:100%;box-sizing:border-box}
+body.admin-mode .admin-form-standard-body form button[type=submit]{justify-self:start}
+@media(max-width:680px){body.admin-mode .admin-form-standard-body form .grid3,body.admin-mode .admin-form-standard-body form .grid2{grid-template-columns:minmax(0,1fr)!important}body.admin-mode .admin-form-standard-body{padding:12px}body.admin-mode .admin-form-standard-dialog{max-height:94dvh}}
