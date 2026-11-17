@@ -17,3 +17,9 @@ body.admin-mode .admin-form-standard-body form .grid3{display:grid;grid-template
 body.admin-mode .admin-form-standard-body form input:not([type=checkbox]):not([type=radio]),body.admin-mode .admin-form-standard-body form select,body.admin-mode .admin-form-standard-body form textarea{max-width:100%;width:100%;box-sizing:border-box}
 body.admin-mode .admin-form-standard-body form button[type=submit]{justify-self:start}
 @media(max-width:680px){body.admin-mode .admin-form-standard-body form .grid3,body.admin-mode .admin-form-standard-body form .grid2{grid-template-columns:minmax(0,1fr)!important}body.admin-mode .admin-form-standard-body{padding:12px}body.admin-mode .admin-form-standard-dialog{max-height:94dvh}}
+
+body.admin-mode .admin-form-action-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,205px),1fr));gap:12px;margin:0 0 18px}
+body.admin-mode .admin-form-action-grid .admin-form-standard-action{margin:0}
+body.admin-mode .admin-form-action-grid .admin-form-standard-trigger{width:100%;min-height:102px;background:#fff;color:#173d34;border:1px solid #a6b8b0;border-radius:11px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:14px;text-align:left;font-weight:700;box-shadow:0 2px 8px #16372a0a}
+body.admin-mode .admin-form-action-grid .admin-form-standard-trigger:hover{border-color:#117d6a;box-shadow:0 4px 15px #135d3928}
+body.admin-mode .admin-form-action-grid .admin-form-standard-trigger svg{width:24px;height:24px;color:#127b69}
