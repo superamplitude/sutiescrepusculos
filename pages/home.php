@@ -14,7 +14,6 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   $name=trim((string)($site['site_name']??''))?:($prop['name']?:'Pousada');
   $desc=Site::ui('hero_description',$prop['short_description']?:'Reserve sua hospedagem diretamente.');
   $city=trim((string)($prop['city']??''))?:'sua região';
-  $isDemo=trim((string)($prop['name']??''))==='Pousada Brisa do Mar';
   $propertyImages=$pdo->query("SELECT file_path,url,alt_text FROM media WHERE scope='property' AND entity_id=1 AND active=1 AND type='image' ORDER BY is_cover DESC,sort_order,id LIMIT 5")->fetchAll();
   $propertyImagePaths=[];foreach($propertyImages as $pi){$src=safeUrl($pi['file_path']?:$pi['url']);if($src)$propertyImagePaths[]=$src;}
   $qFam=$pdo->query("SELECT cover_image FROM rooms WHERE active=1 AND status='active' AND capacity>=4 AND cover_image IS NOT NULL AND cover_image<>'' ORDER BY capacity DESC,id LIMIT 1");
@@ -22,11 +21,6 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
   $qCouple=$pdo->query("SELECT cover_image FROM rooms WHERE active=1 AND status='active' AND capacity<=2 AND cover_image IS NOT NULL AND cover_image<>'' ORDER BY base_price DESC,id LIMIT 1");
   $coupleImage=safeUrl((string)($qCouple->fetchColumn()?:''));
   $lifestyleImage=$propertyImagePaths[1]??$propertyImagePaths[0]??safeUrl((string)($prop['hero_image']??''));
-  if($isDemo){
-    if(!$familyImage)$familyImage='assets/demo/real/apartamento-familia.jpg';
-    if(!$coupleImage)$coupleImage='assets/demo/real/chale-romance.jpg';
-    if(!$lifestyleImage)$lifestyleImage='assets/demo/real/piscina.jpg';
-  }
   $familyImg=$familyImage?'<img src="'.U::e($familyImage).'" alt="Acomodações para famílias">':'';
   $coupleImg=$coupleImage?'<img src="'.U::e($coupleImage).'" alt="Acomodações para casais">':'';
   $lifestyleImg=$lifestyleImage?'<div class="lifestyle-image"><img src="'.U::e($lifestyleImage).'" alt="Área da pousada"></div>':'';
@@ -44,7 +38,6 @@ if (!defined('SUITES_PAGE_ENTRY')) { http_response_code(404); exit; }
     $rawSrc=$item['file_path']?:$item['url'];
     $src=safeUrl($rawSrc);
     if(!$src)continue;
-    if(str_starts_with($src,'assets/demo/') && is_file(dirname(__DIR__).'/'.$src))$src.='?v='.filemtime(dirname(__DIR__).'/'.$rawSrc);
     $active=$i===0?' active':'';
     $media.='<div class="hero-slide'.$active.'" data-hero-slide>';
     if(($item['type']??'image')==='video'){
