@@ -1,6 +1,6 @@
-<?php use App\Core\U; use App\Core\Auth; use App\Core\Site; $siteSettings=Site::all(); $siteLayout=(string)($siteSettings['layout_variant']??'layout1'); $siteLogo=(string)($siteSettings['logo_path']??''); $inAdminPanel=defined('SUITES_PANEL_ENTRY') && (bool)Auth::user(); ?>
+<?php use App\Core\U; use App\Core\Auth; use App\Core\Site; $siteSettings=Site::all(); $siteLayout=(string)($siteSettings['layout_variant']??'layout1'); $siteLogo=(string)($siteSettings['logo_path']??''); $inAdminPanel=defined('SUITES_PANEL_ENTRY') && (bool)Auth::user(); $siteDisplayName=trim((string)($siteSettings['site_name']??''));if($siteDisplayName===''){try{$siteDisplayName=trim((string)(\App\Core\DB::pdo()->query("SELECT name FROM property WHERE id=1")->fetchColumn()?:''));}catch(\Throwable $e){}}if($siteDisplayName==='')$siteDisplayName='Suítes Crepúsculo'; ?>
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?=U::e($title??'Pousada IA')?></title><?php if(!empty($metaDescription)):?><meta name="description" content="<?=U::e($metaDescription)?>"><?php endif;?><?php if(!empty($siteSettings['favicon_path'])):?><link rel="icon" href="<?=U::e($siteSettings['favicon_path'])?>"><?php endif;?><?php $cssV=@filemtime(__DIR__.'/../../assets/css/app.css')?:time(); ?><style id="crepusculo-room-actions">
+<title><?=U::e($title??'Suítes Crepúsculo')?></title><?php if(!empty($metaDescription)):?><meta name="description" content="<?=U::e($metaDescription)?>"><?php endif;?><?php if(!empty($siteSettings['favicon_path'])):?><link rel="icon" href="<?=U::e($siteSettings['favicon_path'])?>"><?php endif;?><?php $cssV=@filemtime(__DIR__.'/../../assets/css/app.css')?:time(); ?><style id="crepusculo-room-actions">
 .table-actions{display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:nowrap!important;white-space:nowrap!important}
 .table-actions form{display:inline-flex!important;margin:0!important;padding:0!important;width:auto!important}
 .table-actions .btn.secondary.small,
@@ -45,7 +45,7 @@ body.admin-mode .panel-card-icon svg{display:block;width:21px;height:21px}
 <aside class="admin-sidebar">
   <div class="admin-brand">
     <?php if($siteLogo):?><img class="admin-brand-logo" src="<?=U::e(preg_match('~^(?:assets|storage)/~',(string)$siteLogo)?'/'.$siteLogo:$siteLogo)?>" alt="Logomarca"><?php else:?><span class="admin-brand-mark">B</span><?php endif;?>
-    <span><b><?=U::e($siteSettings['site_name']?:'POUSADA IA')?></b><small>Painel administrativo</small></span>
+    <span><b><?=U::e($siteDisplayName)?></b><small>Painel administrativo</small></span>
   </div>
 
   <nav class="admin-nav">
@@ -149,7 +149,7 @@ body.admin-mode .panel-card-icon svg{display:block;width:21px;height:21px}
 <?php
   $publicProp=null;
   try{$publicProp=\App\Core\DB::pdo()->query("SELECT name,city,state,phone,whatsapp,email,instagram,facebook,address,address_number,neighborhood,zip,hero_image,announcement_enabled,announcement_text,announcement_link_text,announcement_link_url FROM property WHERE id=1")->fetch();}catch(Throwable $e){}
-  $publicName=trim((string)($siteSettings['site_name']??''))?:($publicProp['name']??'Pousada IA');
+  $publicName=trim((string)($siteSettings['site_name']??''))?:($publicProp['name']??$siteDisplayName);
 ?>
 <?php if(!isset($publicProp['announcement_enabled']) || (int)$publicProp['announcement_enabled']===1):?>
 <div class="public-announcement"><?=U::e($publicProp['announcement_text']?:'Reserva direta • Consulte disponibilidade e condições no próprio site')?><?php if(!empty($publicProp['announcement_link_text']) && !empty($publicProp['announcement_link_url'])):?> · <a href="<?=U::e($publicProp['announcement_link_url'])?>"><?=U::e($publicProp['announcement_link_text'])?></a><?php endif;?></div>
